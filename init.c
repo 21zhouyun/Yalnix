@@ -45,15 +45,15 @@ void InitPageTable(){
     int i;
     // text section
     for (i = GET_PFN(VMEM_1_BASE); i < kernel_text_limit_pfn; i++) {
-        (page_table_region1_ptr + i) -> valid = 1;
-        (page_table_region1_ptr + i) -> pfn = i;
-        (page_table_region1_ptr + i) -> kprot = (PROT_READ|PROT_EXEC);
+        (page_table_region1_ptr + i - PAGE_TABLE1_OFFSET) -> valid = 1;
+        (page_table_region1_ptr + i - PAGE_TABLE1_OFFSET) -> pfn = i;
+        (page_table_region1_ptr + i - PAGE_TABLE1_OFFSET) -> kprot = (PROT_READ|PROT_EXEC);
     }
     //data, bss, heap
     for (i = kernel_text_limit_pfn; i <= kernel_heap_limit_pfn; i++) {
-        (page_table_region1_ptr + i) -> valid = 1;
-        (page_table_region1_ptr + i) -> pfn = i;
-        (page_table_region1_ptr + i) -> kprot = (PROT_READ|PROT_WRITE);
+        (page_table_region1_ptr + i - PAGE_TABLE1_OFFSET) -> valid = 1;
+        (page_table_region1_ptr + i - PAGE_TABLE1_OFFSET) -> pfn = i;
+        (page_table_region1_ptr + i - PAGE_TABLE1_OFFSET) -> kprot = (PROT_READ|PROT_WRITE);
     }
 
     //initialize a page table for region 0
