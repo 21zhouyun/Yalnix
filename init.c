@@ -9,7 +9,10 @@
 bool VM_ENABLE = false;
 
 struct pte page_table_region0[PAGE_TABLE_LEN];
+pte* page_table_region0_ptr = page_table_region0;
+
 struct pte page_table_region1[PAGE_TABLE_LEN];
+pte* page_table_region1_ptr = page_table_region1;
 
 void *KERNEL_HEAP_LIMIT;
 
@@ -23,35 +26,35 @@ void KernelStart(ExceptionStackFrame *frame,
 
 void InitPageTable(){
     // initialize page table for region 1 to be invalid
-    page_table_region1 = invalidate_page_table(page_table_region1);
+    page_table_region1_ptr = invalidate_page_table(page_table_region1_ptr);
 
     /**
      * Map region 1 to virtual memory
      * See hangout p22-23 for detailed mapping
      */
-    kernel_heap_limit_pfn = GET_PFN(KERNEL_HEAP_LIMIT);
-    kernel_text_limit_pfn = GET_PFN(&_etext);
+    int kernel_heap_limit_pfn = GET_PFN(KERNEL_HEAP_LIMIT);
+    int kernel_text_limit_pfn = GET_PFN(&_etext);
 
     int i;
     // text section
     for (i = GET_PFN(VMEM_1_BASE); i < kernel_text_limit_pfn; i++) {
-        page_table_region1[i].valid = 1;
-        page_table_region1[i].pfn = i;
-        page_table_region1[i].kprot = (PROT_READ|PROT_EXEC);
+        (page_table_region1_ptr + i) -> valid = 1;
+        (page_table_region1_ptr + i) -> pfn = i;
+        (page_table_region1_ptr + i) -> kprot = (PROT_READ|PROT_EXEC);
     }
     //data, bss, heap
     for (i = kernel_text_limit_pfn; i <= kernel_heap_limit_pfn; i++) {
-        page_table_region1[i].valid = 1;
-        page_table_region1[i].pfn = i;
-        page_table_region1[i].kprot = (PROT_READ|PROT_WRITE);
+        (page_table_region1_ptr + i) -> valid = 1;
+        (page_table_region1_ptr + i) -> pfn = i;
+        (page_table_region1_ptr + i) -> kprot = (PROT_READ|PROT_WRITE);
     }
 
     //initialize a page table for region 0
-    page_table_region0 = invalidate_page_table(page_table_region0);
-    page_table_region0 = initialize_page_table_region0(page_table_region0);
+    page_table_region0_ptr = invalidate_page_table(page_table_region0_ptr);
+    page_table_region0_ptr = initialize_page_table_region0(page_table_region0_ptr);
 
-    WriteRegister(REG_PTR0, (RCS421RegVal)page_table_region0);
-    WriteRegister(REG_PTR1, (RCS421RegVal)page_table_region1);
+    WriteRegister(REG_PTR0, (RCS421RegVal)page_table_region0_ptr);
+    WriteRegister(REG_PTR1, (RCS421RegVal)page_table_region1_ptr);
     WriteRegister(REG_VM_ENABLE, (RCS421RegVal)1);
     TracePrintf(1, "Enabled virtual memory.");
 }
