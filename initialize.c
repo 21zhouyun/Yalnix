@@ -63,5 +63,9 @@ void InitPageTable(){
     WriteRegister(REG_PTR0, (RCS421RegVal)page_table_region0_ptr);
     WriteRegister(REG_PTR1, (RCS421RegVal)page_table_region1_ptr);
     WriteRegister(REG_VM_ENABLE, (RCS421RegVal)1);
+    VM_ENABLE = true;
     TracePrintf(1, "Enabled virtual memory.");
+
+
+    
 }

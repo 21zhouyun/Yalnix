@@ -3,6 +3,7 @@
 
 #include "include/hardware.h"
 #include "include/yalnix.h"
+#include "queue.h"
 
 #define GET_PFN(addr) (((long) addr & PAGEMASK) >> PAGESHIFT)
 
@@ -17,8 +18,12 @@ struct pcb{
     unsigned int pid;
     int process_state;
     SavedContext *context;
-
-
+    struct pcb* parent;
+    queue* children;
+    ExceptionStackFrame *frame;
+    void *pc_next;
+    void *sp_next;
+    unsigned long psr_next;
 };
 
 #endif //YALNIX_MEMUTIL_H
