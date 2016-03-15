@@ -17,6 +17,10 @@ struct pte* page_table_region1_ptr = page_table_region1;
 
 void *KERNEL_HEAP_LIMIT;
 
+int SetKernelBrk(void *addr){
+    return 0;
+}
+
 void KernelStart(ExceptionStackFrame *frame,
     unsigned int pmem_size, void *orig_brk, char **cmd_args){
 
