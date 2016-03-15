@@ -7,7 +7,7 @@
 #define GET_PFN(addr) (((long) addr & PAGEMASK) >> PAGESHIFT)
 
 #define PFN_INVALID -1
-
+#define PAGE_TABLE1_OFFSET 512
 struct pte* invalidate_page_table(struct pte* page_table);
 
 struct pte* initialize_page_table_region0(struct pte* page_table);

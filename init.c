@@ -40,6 +40,7 @@ void InitPageTable(){
      */
     int kernel_heap_limit_pfn = GET_PFN(KERNEL_HEAP_LIMIT);
     int kernel_text_limit_pfn = GET_PFN(&_etext);
+    
 
     int i;
     // text section
