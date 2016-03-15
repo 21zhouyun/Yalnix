@@ -33,7 +33,7 @@ ALL = yalnix test1 test2 test3
 #	make up your kernel, and KERNEL_SRCS should  be a list of
 #	the corresponding source files that make up your kernel.
 #
-KERNEL_OBJS = init.o init.o
+KERNEL_OBJS = init.o trap.o
 KERNEL_SRCS = init.c trap.c
 
 #

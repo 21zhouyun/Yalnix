@@ -4,7 +4,7 @@
 #include "include/hardware.h"
 #include "include/yalnix.h"
 
-#include <trap.h>
+#include "trap.h"
 
 extern void *trapVector[];
 

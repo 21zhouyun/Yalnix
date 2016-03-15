@@ -1,12 +1,13 @@
-#include <include/yalnix.h>
-#include <include/hardware.h>
+#include "include/yalnix.h"
+#include "include/hardware.h"
 #include "trap.h"
 
 
 void *trapVector[TRAP_VECTOR_SIZE];
 
 void InitTrapVector() {
-    for (int i = 0; i < TRAP_VECTOR_SIZE; i++)
+    int i;
+    for (i = 0; i < TRAP_VECTOR_SIZE; i++)
         trapVector[i] = &InvalidTrapHandler;
 
     trapVector[TRAP_KERNEL] = KernelCallHandler;

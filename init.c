@@ -1,18 +1,19 @@
 #include "include/hardware.h"
 #include "include/yalnix.h"
+#include <stdbool.h>
 
 #include "init.h"
 #include "trap.h"
-#include "util/memutil.h"
+#include "memutil.h"
 
 // whether we have enabled virtual memory
 bool VM_ENABLE = false;
 
 struct pte page_table_region0[PAGE_TABLE_LEN];
-pte* page_table_region0_ptr = page_table_region0;
+struct pte* page_table_region0_ptr = page_table_region0;
 
 struct pte page_table_region1[PAGE_TABLE_LEN];
-pte* page_table_region1_ptr = page_table_region1;
+struct pte* page_table_region1_ptr = page_table_region1;
 
 void *KERNEL_HEAP_LIMIT;
 
@@ -22,6 +23,7 @@ void KernelStart(ExceptionStackFrame *frame,
     InitTrapVector();
     // init page tables
     KERNEL_HEAP_LIMIT =orig_brk;
+    InitPageTable();
 }
 
 void InitPageTable(){

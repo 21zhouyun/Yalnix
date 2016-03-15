@@ -5,6 +5,8 @@
 #include "include/hardware.h"
 #include "trap.h"
 
+int SetKernelBrk(void *addr);
+
 void KernelStart(ExceptionStackFrame *frame, unsigned int pmem_size, void *orig_brk, char **cmd_args);
 
 void InitPageTable();

@@ -4,7 +4,7 @@
 #include "include/hardware.h"
 #include "include/yalnix.h"
 
-#define GET_PFN(addr) (((long) mem_address & PAGEMASK) >> PAGESHIFT)
+#define GET_PFN(addr) (((long) addr & PAGEMASK) >> PAGESHIFT)
 
 #define PFN_INVALID -1
 
