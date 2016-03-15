@@ -13,4 +13,12 @@ struct pte* invalidate_page_table(struct pte* page_table);
 
 struct pte* initialize_page_table_region0(struct pte* page_table);
 
+struct pcb{
+    unsigned int pid;
+    int process_state;
+    SavedContext *context;
+
+
+};
+
 #endif //YALNIX_MEMUTIL_H
