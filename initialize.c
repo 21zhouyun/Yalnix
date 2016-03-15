@@ -2,7 +2,7 @@
 #include "include/yalnix.h"
 #include <stdbool.h>
 
-#include "init.h"
+#include "initialize.h"
 #include "trap.h"
 #include "memutil.h"
 
