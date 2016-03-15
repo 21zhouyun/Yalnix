@@ -1,11 +1,6 @@
-#include <comp421/yalnix.h>
-#include <comp421/hardware.h>
+#include <include/yalnix.h>
+#include <include/hardware.h>
 #include "trap.h"
-
-
-// Just for CLion purpose
-#include "yalnix.h"
-#include "hardware.h"
 
 
 void *trapVector[TRAP_VECTOR_SIZE];

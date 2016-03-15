@@ -1,5 +1,8 @@
-#include <comp421/yalnix.h>
-#include <comp421/hardware.h>
+#ifndef YALNIX_TRAP_H
+#define YALNIX_TRAP_H
+
+#include "include/hardware.h"
+#include "include/yalnix.h"
 
 #include <trap.h>
 
@@ -15,3 +18,5 @@ extern void MathHandler(ExceptionStackFrame *state);
 extern void TtyReceiveHandler(ExceptionStackFrame *state);
 extern void TtyTransmitHandler(ExceptionStackFrame *state);
 extern void InvalidTrapHandler(ExceptionStackFrame *state);
+
+#endif //YALNIX_TRAP_H
