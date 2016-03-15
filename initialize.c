@@ -17,7 +17,13 @@ struct pte* page_table_region1_ptr = page_table_region1;
 
 void *KERNEL_HEAP_LIMIT;
 
-int SetKernelBrk(void *addr){
+int SetKernelBrk(void *addr) {
+    if (VM_ENABLE) {
+        // TODO
+    } else {
+        TracePrintf(1, "virtual memory is not enabled.");
+        KERNEL_HEAP_LIMIT = addr;
+    }
     return 0;
 }
 
@@ -66,6 +72,7 @@ void InitPageTable(){
     VM_ENABLE = true;
     TracePrintf(1, "Enabled virtual memory.");
 
+    struct pcb* init_pcb;
+    init_pcb = make_pcb(NULL); //no parent.
 
-    
 }

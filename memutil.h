@@ -10,10 +10,6 @@
 #define PFN_INVALID -1
 #define PAGE_TABLE1_OFFSET 512
 
-struct pte* invalidate_page_table(struct pte* page_table);
-
-struct pte* initialize_page_table_region0(struct pte* page_table);
-
 struct pcb{
     unsigned int pid;
     int process_state;
@@ -21,9 +17,15 @@ struct pcb{
     struct pcb* parent;
     queue* children;
     ExceptionStackFrame *frame;
-    void *pc_next;
-    void *sp_next;
-    unsigned long psr_next;
+    void *pc_next; //program counter
+
+    struct pte* page_table_ptr; // address space of this process
 };
+
+struct pte* invalidate_page_table(struct pte* page_table);
+
+struct pte* initialize_page_table_region0(struct pte* page_table);
+
+struct pcb* make_pcb(struct pcb* parent);
 
 #endif //YALNIX_MEMUTIL_H
