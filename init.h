@@ -1,8 +1,8 @@
 #ifndef YALNIX_INIT_H
 #define YALNIX_INIT_H
 
-#include <include/yalnix.h>
-#include <include/hardware.h>
+#include "include/yalnix.h"
+#include "include/hardware.h"
 #include "trap.h"
 
 void KernelStart(ExceptionStackFrame *frame, unsigned int pmem_size, void *orig_brk, char **cmd_args);
