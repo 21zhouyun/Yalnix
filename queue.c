@@ -8,7 +8,7 @@ queue* make_queue(int size){
 
     queue *q = (queue*)malloc(sizeof(queue));
     q->length=0;
-    q.size=size;
+    q->size=size;
     return q;
 }
 

@@ -33,8 +33,8 @@ ALL = yalnix
 #	make up your kernel, and KERNEL_SRCS should  be a list of
 #	the corresponding source files that make up your kernel.
 #
-KERNEL_OBJS = memutil.o initialize.o trap.o
-KERNEL_SRCS = memutil.c initialize.c trap.c
+KERNEL_OBJS = queue.o memutil.o initialize.o trap.o
+KERNEL_SRCS = queue.c memutil.c initialize.c trap.c
 
 #
 #	You should not have to modify anything else in this Makefile

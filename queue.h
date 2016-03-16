@@ -4,7 +4,7 @@
 #define DEFAULT_QUEUE_SIZE 8
 
 typedef struct Node{
-    struct node* next;
+    struct Node* next;
     void* value;
 } node;
 
