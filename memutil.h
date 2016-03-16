@@ -1,5 +1,5 @@
-#include "include/hardware.h"
-#include "include/yalnix.h"
+#include <comp421/hardware.h>
+#include <comp421/yalnix.h>
 #include "queue.h"
 #include <stdbool.h>
 
@@ -18,10 +18,11 @@ struct pcb{
     SavedContext *context;
     struct pcb* parent;
     queue* children;
-    ExceptionStackFrame *frame;
-    void *pc_next; //program counter
-
-    struct pte* page_table_ptr; // address space of this process
+    ExceptionStackFrame *frame;//TODO: check if we really need this
+    void *pc; //program counter
+    void *sp; //stack pointer
+    unsigned long psr;
+    struct pte* page_table; // address space of this process
 } pcb;
 
 struct frame{
@@ -32,8 +33,8 @@ struct pte* makePageTable();
 struct pte* invalidatePageTable(struct pte *page_table);
 struct pte* initializeUserPageTable(struct pte *page_table);
 
-struct pcb* makePCB(struct pcb *parent);
+struct pcb* makePCB(struct pcb *parent, struct pte* page_table);
 
-int initializeFrames(int num_free_frames);
-int setFrame(int index, bool state);
+int initialize_frames(int num_free_frames);
+int set_frame(int index, bool state);
 int getFreeFrame();

@@ -1,11 +1,14 @@
-#include "include/hardware.h"
-#include "include/yalnix.h"
+#include <comp421/hardware.h>
+#include <comp421/yalnix.h>
 #include "memutil.h"
 #include <stdlib.h>
 
 /* Globals */
 int PID = 0;
 
+/**
+* make a new invalidated page table
+*/
 struct pte* makePageTable(){
     struct pte* new_page_table = (struct pte*)malloc(sizeof(struct pte) * PAGE_TABLE_LEN);
     new_page_table = invalidatePageTable(new_page_table);
@@ -45,17 +48,19 @@ struct pte* initializeUserPageTable(struct pte* page_table) {
 
 /**
  * initialize a new pcb.
+ * Assume the page_table, if not NULL, is already initialize
+ * in the correct way.
  */
-struct pcb* makePCB(struct pcb* parent){
+struct pcb* makePCB(struct pcb* parent, struct pte* page_table){
     struct pcb* pcb_ptr;
-    struct pte* pte_ptr = makePageTable();
+
+    if (page_table == NULL){
+        page_table = makePageTable();
+        page_table = initializeUserPageTable(page_table);
+    }
 
     // Initiate pcb
     pcb_ptr = (struct pcb *)malloc(sizeof(struct pcb));
-
-    // Initialize page table
-    pte_ptr = invalidatePageTable(pte_ptr);
-    pte_ptr = initializeUserPageTable(pte_ptr);
 
     pcb_ptr->pid = PID++;
     pcb_ptr->process_state = 0;
@@ -63,7 +68,9 @@ struct pcb* makePCB(struct pcb* parent){
     pcb_ptr->parent = parent;
     pcb_ptr->children = makeQueue(10);
     pcb_ptr->frame = NULL;
-    pcb_ptr->pc_next = NULL;
+    pcb_ptr->pc = NULL;
+    pcb_ptr->sp = NULL;
+    pcb_ptr->page_table = page_table;
 
     return pcb_ptr;
 }

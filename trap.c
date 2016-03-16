@@ -1,5 +1,6 @@
 #include <stdlib.h>
-#include "include/hardware.h"
+#include <comp421/hardware.h>
+#include <comp421/yalnix.h>
 #include "trap.h"
 
 
@@ -19,6 +20,7 @@ void InitTrapVector() {
     trap_vector[TRAP_TTY_TRANSMIT] = TtyTransmitHandler;
 
     WriteRegister(REG_VECTOR_BASE, (RCS421RegVal) &trap_vector);
+    TracePrintf(0, "Done initializing trap vector\n");
 }
 
 void KernelCallHandler(ExceptionStackFrame *state){

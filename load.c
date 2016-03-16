@@ -1,9 +1,9 @@
->>>> THIS FILE IS ONLY A TEMPLATE FOR YOUR LoadProgram FUNCTION
-
->>>> You MUST edit each place marked by ">>>>" below to replace
->>>> the ">>>>" description with code for your kernel to implement the
->>>> behavior described.  You might also want to save the original
->>>> annotations as comments.
+//>>>> THIS FILE IS ONLY A TEMPLATE FOR YOUR LoadProgram FUNCTION
+//
+//>>>> You MUST edit each place marked by ">>>>" below to replace
+//>>>> the ">>>>" description with code for your kernel to implement the
+//>>>> behavior described.  You might also want to save the original
+//>>>> annotations as comments.
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -12,6 +12,8 @@
 
 #include <comp421/hardware.h>
 #include <comp421/loadinfo.h>
+#include "memutil.h"
+
 
 /*
  *  Load a program into the current process's address space.  The
@@ -34,7 +36,7 @@
  *  in this case.
  */
 int
-LoadProgram(char *name, char **args)
+LoadProgram(char *name, struct pcb* program_pcb, char **args)
 {
     int fd;
     int status;
@@ -50,7 +52,10 @@ LoadProgram(char *name, char **args)
     int data_bss_npg;
     int stack_npg;
 
+    struct pcb* my_pcb = program_pcb;
+
     TracePrintf(0, "LoadProgram '%s', args %p\n", name, args);
+    TracePrintf(1, "OS assigned pid %d", my_pcb->pid);
 
     if ((fd = open(name, O_RDONLY)) < 0) {
 	TracePrintf(0, "LoadProgram: can't open file '%s'\n", name);
@@ -140,36 +145,42 @@ LoadProgram(char *name, char **args)
      *  And make sure there will be enough physical memory to
      *  load the new program.
      */
-    >>>> The new program will require text_npg pages of text,
-    >>>> data_bss_npg pages of data/bss, and stack_npg pages of
-    >>>> stack.  In checking that there is enough free physical
-    >>>> memory for this, be sure to allow for the physical memory
-    >>>> pages already allocated to this process that will be
-    >>>> freed below before we allocate the needed pages for
-    >>>> the new program being loaded.
-    if (>>>> not enough free physical memory) {
+//    >>>> The new program will require text_npg pages of text,
+//    >>>> data_bss_npg pages of data/bss, and stack_npg pages of
+//    >>>> stack.  In checking that there is enough free physical
+//    >>>> memory for this, be sure to allow for the physical memory
+//    >>>> pages already allocated to this process that will be
+//    >>>> freed below before we allocate the needed pages for
+//    >>>> the new program being loaded.
+    if (num_free_frames < (text_npg + data_bss_npg + stack_npg)) {
 	TracePrintf(0,
 	    "LoadProgram: program '%s' size too large for physical memory\n",
 	    name);
-	free(argbuf);
+	free(argbuf); //TODO:What is this about?
 	close(fd);
 	return (-1);
     }
 
-    >>>> Initialize sp for the current process to (char *)cpp.
-    >>>> The value of cpp was initialized above.
+    // >>>> Initialize sp for the current process to (char *)cpp.
+    // >>>> The value of cpp was initialized above.
+    program_pcb->sp = (char *)cpp;
+
 
     /*
      *  Free all the old physical memory belonging to this process,
      *  but be sure to leave the kernel stack for this process (which
      *  is also in Region 0) alone.
      */
-    >>>> Loop over all PTEs for the current process's Region 0,
-    >>>> except for those corresponding to the kernel stack (between
-    >>>> address KERNEL_STACK_BASE and KERNEL_STACK_LIMIT).  For
-    >>>> any of these PTEs that are valid, free the physical memory
-    >>>> memory page indicated by that PTE's pfn field.  Set all
-    >>>> of these PTEs to be no longer valid.
+    // >>>> Loop over all PTEs for the current process's Region 0,
+    // >>>> except for those corresponding to the kernel stack (between
+    // >>>> address KERNEL_STACK_BASE and KERNEL_STACK_LIMIT).  For
+    // >>>> any of these PTEs that are valid, free the physical memory
+    // >>>> memory page indicated by that PTE's pfn field.  Set all
+    // >>>> of these PTEs to be no longer valid.
+    struct pte* user_table = program_pcb->page_table;
+    for (int i = 0; i < PAGE_TABLE_LEN; i++){
+        
+    }
 
     /*
      *  Fill in the page table with the right number of text,

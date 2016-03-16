@@ -1,5 +1,5 @@
-#include "include/yalnix.h"
-#include "include/hardware.h"
+#include <comp421/hardware.h>
+#include <comp421/yalnix.h>
 
 int SetKernelBrk(void *addr);
 
@@ -7,5 +7,5 @@ void KernelStart(ExceptionStackFrame *frame, unsigned int pmem_size, void *orig_
 
 int InitFrames(unsigned int pmem_size);
 
-int InitPageTable();
+int InitPageTable(ExceptionStackFrame *frame);
 
