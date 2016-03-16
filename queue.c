@@ -1,10 +1,14 @@
 #include "queue.h"
 #include <stdlib.h>
 
-queue* make_queue(){
+queue* make_queue(int size){
+    if (size < DEFAULT_QUEUE_SIZE){
+        size = DEFAULT_QUEUE_SIZE;
+    }
+
     queue *q = (queue*)malloc(sizeof(queue));
     q->length=0;
-    q.size=DEFAULT_QUEUE_SIZE;
+    q.size=size;
     return q;
 }
 

@@ -4,22 +4,22 @@
 #include "trap.h"
 
 
-void *trapVector[TRAP_VECTOR_SIZE];
+void *trap_vector[TRAP_VECTOR_SIZE];
 
 void InitTrapVector() {
     int i;
     for (i = 0; i < TRAP_VECTOR_SIZE; i++)
-        trapVector[i] = NULL;
+        trap_vector[i] = NULL;
 
-    trapVector[TRAP_KERNEL] = KernelCallHandler;
-    trapVector[TRAP_CLOCK] = ClockHandler;
-    trapVector[TRAP_ILLEGAL] = IllegalHandler;
-    trapVector[TRAP_MEMORY] = MemoryHandler;
-    trapVector[TRAP_MATH] = MathHandler;
-    trapVector[TRAP_TTY_RECEIVE] = TtyReceiveHandler;
-    trapVector[TRAP_TTY_TRANSMIT] = TtyTransmitHandler;
+    trap_vector[TRAP_KERNEL] = KernelCallHandler;
+    trap_vector[TRAP_CLOCK] = ClockHandler;
+    trap_vector[TRAP_ILLEGAL] = IllegalHandler;
+    trap_vector[TRAP_MEMORY] = MemoryHandler;
+    trap_vector[TRAP_MATH] = MathHandler;
+    trap_vector[TRAP_TTY_RECEIVE] = TtyReceiveHandler;
+    trap_vector[TRAP_TTY_TRANSMIT] = TtyTransmitHandler;
 
-    WriteRegister(REG_VECTOR_BASE, (RCS421RegVal) &trapVector);
+    WriteRegister(REG_VECTOR_BASE, (RCS421RegVal) &trap_vector);
 }
 
 void KernelCallHandler(ExceptionStackFrame *state){

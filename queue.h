@@ -15,7 +15,7 @@ typedef struct Queue{
     unsigned int size;
 } queue;
 
-queue *make_queue();
+queue* make_queue(int size);
 int enqueue(queue* q, void* value);
 node* dequeue(queue* q);
 

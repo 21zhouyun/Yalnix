@@ -9,6 +9,8 @@ int SetKernelBrk(void *addr);
 
 void KernelStart(ExceptionStackFrame *frame, unsigned int pmem_size, void *orig_brk, char **cmd_args);
 
-void InitPageTable();
+int InitFrames(unsigned int pmem_size);
+
+int InitPageTable();
 
 #endif //YALNIX_INIT_H

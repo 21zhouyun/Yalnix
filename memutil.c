@@ -2,7 +2,14 @@
 #include "include/hardware.h"
 #include "include/yalnix.h"
 
+/* Globals */
 int PID = 0;
+
+struct pte* make_page_table(int size){
+    pte* new_page_table = (pte*)malloc(sizeof(pte) * PAGE_TABLE_LEN);
+    new_page_table = invalidate_page_table(new_page_table);
+    return new_page_table;
+}
 
 /**
  * Invalidate a page table
@@ -21,7 +28,7 @@ struct pte* invalidate_page_table(struct pte* page_table){
 /**
  * Initialize a page table for region 0
  */
-struct pte* initialize_page_table_region0(struct pte* page_table) {
+struct pte* initialze_user_page_table(struct pte* page_table) {
     int i;
     int limit = GET_PFN(KERNEL_STACK_LIMIT);
     int base = GET_PFN(KERNEL_STACK_BASE);
@@ -62,4 +69,46 @@ struct pcb* make_pcb(struct pcb* parent){
     pcb_ptr->pc_next = NULL;
 
     return pcb_ptr;
+}
+
+/**
+ * Initialize a list of frames
+ */
+int initialize_frames(int num_of_free_frames){
+    free_frames = (frame*)malloc(sizeof(struct frame) * num_of_free_frames);
+    num_frames = num_of_free_frames;
+    num_free_frames = num_of_free_frames;
+    int i;
+
+    for (i = 0; i < num_free_frames; i++){
+        free_frames[i].free = true;
+    }
+
+    return 0;
+}
+
+/**
+ * Set the free state of the frame
+ */
+int set_frame(int index, bool state){
+    free_frames[index].free = state;
+    if (state == true){
+        num_free_frames++;
+    } else {
+        num_free_frames--;
+    }
+}
+
+/**
+ * Greedily get the first free frame
+ */
+int get_free_frame(){
+    int i;
+    for (i = 0; i < num_frames; i++){
+        if (free_frames[i].free == true){
+            set_frame(i, false);
+            return i;
+        }
+    }
+    return -1;
 }
