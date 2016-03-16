@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include "include/yalnix.h"
 #include "include/hardware.h"
 #include "trap.h"
 

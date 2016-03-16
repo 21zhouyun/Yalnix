@@ -1,6 +1,3 @@
-#ifndef YALNIX_MEMUTIL_H
-#define YALNIX_MEMUTIL_H
-
 #include "include/hardware.h"
 #include "include/yalnix.h"
 #include "queue.h"
@@ -31,14 +28,12 @@ struct frame{
     bool free;
 };
 
-struct pte* make_page_table();
-struct pte* invalidate_page_table(struct pte* page_table);
-struct pte* initialize_user_page_table(struct pte* page_table);
+struct pte* makePageTable();
+struct pte* invalidatePageTable(struct pte *page_table);
+struct pte* initializeUserPageTable(struct pte *page_table);
 
-struct pcb* make_pcb(struct pcb* parent);
+struct pcb* makePCB(struct pcb *parent);
 
-int initialize_frames(int num_free_frames);
-int set_frame(int index, bool state);
-int get_free_frame();
-
-#endif //YALNIX_MEMUTIL_H
+int initializeFrames(int num_free_frames);
+int setFrame(int index, bool state);
+int getFreeFrame();

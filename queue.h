@@ -1,6 +1,3 @@
-#ifndef YALNIX_QUEUE_H
-#define YALNIX_QUEUE_H
-
 #define DEFAULT_QUEUE_SIZE 8
 
 typedef struct Node{
@@ -15,8 +12,7 @@ typedef struct Queue{
     unsigned int size;
 } queue;
 
-queue* make_queue(int size);
+queue* makeQueue(int size);
 int enqueue(queue* q, void* value);
 node* dequeue(queue* q);
 
-#endif //YALNIX_QUEUE_H

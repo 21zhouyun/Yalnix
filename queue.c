@@ -1,7 +1,7 @@
 #include "queue.h"
 #include <stdlib.h>
 
-queue* make_queue(int size){
+queue* makeQueue(int size){
     if (size < DEFAULT_QUEUE_SIZE){
         size = DEFAULT_QUEUE_SIZE;
     }
