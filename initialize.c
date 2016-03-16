@@ -49,9 +49,9 @@ void KernelStart(ExceptionStackFrame *frame,
 
 int InitPageTable(){
     int i;
-    kernel_page_table = make_page_table();
-    user_page_table = make_page_table();
-    init_page_table = make_page_table();
+    kernel_page_table = makePageTable();
+    user_page_table = makePageTable();
+    init_page_table = makePageTable();
 
     int kernel_heap_limit = GET_PFN(kernel_brk);
     int kernel_text_limit = GET_PFN(&_etext);
@@ -76,7 +76,7 @@ int InitPageTable(){
     }
 
     // User page table
-    user_page_table = initialize_user_page_table(user_page_table);
+    user_page_table = initializeUserPageTable(user_page_table);
 
     WriteRegister( REG_PTR0, (RCS421RegVal) user_page_table);
     WriteRegister( REG_PTR1, (RCS421RegVal) kernel_page_table);
