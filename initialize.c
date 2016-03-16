@@ -3,9 +3,9 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#include "initialize.h"
-#include "trap.h"
 #include "memutil.h"
+#include "trap.h"
+#include "initialize.h"
 
 // whether we have enabled virtual memory
 bool vm_enable = false;
@@ -19,7 +19,7 @@ struct pte* init_page_table;
 void *kernel_brk;
 
 int SetKernelBrk(void *addr) {
-    if (VM_ENABLE) {
+    if (vm_enable) {
         // TODO
     } else {
         TracePrintf(1, "virtual memory is not enabled.");
@@ -31,9 +31,9 @@ int SetKernelBrk(void *addr) {
 void KernelStart(ExceptionStackFrame *frame,
     unsigned int pmem_size, void *orig_brk, char **cmd_args){
 
+    kernel_brk = orig_brk;
+
     InitTrapVector();
-    // init page tables
-    KERNEL_HEAP_LIMIT =orig_brk;
 
     // before initialize page table, initialize a frame list
     int num_of_free_frames = pmem_size/PAGESIZE;
@@ -53,7 +53,7 @@ int InitPageTable(){
     user_page_table = make_page_table();
     init_page_table = make_page_table();
 
-    int kernel_heap_limit = GET_PFN(KERNEL_HEAP_LIMIT);
+    int kernel_heap_limit = GET_PFN(kernel_brk);
     int kernel_text_limit = GET_PFN(&_etext);
 
     TracePrintf(1, "Kernel heap limit %d", kernel_heap_limit);
@@ -72,7 +72,7 @@ int InitPageTable(){
         (kernel_page_table + i - KERNEL_TABLE_OFFSET)->valid = 1;
         (kernel_page_table + i - KERNEL_TABLE_OFFSET)->pfn = i;
         (kernel_page_table + i - KERNEL_TABLE_OFFSET)->kprot = (PROT_READ | PROT_EXEC);
-        set_frame(i, FRAME_NOT_FREE);
+        set_frame(i, false);
     }
 
     // User page table
@@ -84,5 +84,6 @@ int InitPageTable(){
 
     WriteRegister( REG_VM_ENABLE, (RCS421RegVal) 1);
     vm_enable = true;
-
+    
+    return 0;
 }
