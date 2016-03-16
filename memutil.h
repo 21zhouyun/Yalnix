@@ -34,6 +34,6 @@ struct pte* initializeUserPageTable(struct pte *page_table);
 
 struct pcb* makePCB(struct pcb *parent);
 
-int initializeFrames(int num_free_frames);
-int setFrame(int index, bool state);
+int initialize_frames(int num_free_frames);
+int set_frame(int index, bool state);
 int getFreeFrame();
