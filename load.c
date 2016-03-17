@@ -36,7 +36,7 @@
  *  in this case.
  */
 int
-LoadProgram(char *name, struct pcb* program_pcb, char **args)
+LoadProgram(char *name, char **args, struct pcb* program_pcb)
 {
     int fd;
     int status;
@@ -52,10 +52,9 @@ LoadProgram(char *name, struct pcb* program_pcb, char **args)
     int data_bss_npg;
     int stack_npg;
 
-    struct pcb* my_pcb = program_pcb;
+    ExceptionStackFrame* frame = program_pcb->frame;
 
     TracePrintf(0, "LoadProgram '%s', args %p\n", name, args);
-    TracePrintf(1, "OS assigned pid %d", my_pcb->pid);
 
     if ((fd = open(name, O_RDONLY)) < 0) {
 	TracePrintf(0, "LoadProgram: can't open file '%s'\n", name);
@@ -163,7 +162,8 @@ LoadProgram(char *name, struct pcb* program_pcb, char **args)
 
     // >>>> Initialize sp for the current process to (char *)cpp.
     // >>>> The value of cpp was initialized above.
-    program_pcb->sp = (char *)cpp;
+    frame->sp = (char *)cpp;
+    TracePrintf(1, "Update frame sp\n");
 
 
     /*
@@ -178,9 +178,15 @@ LoadProgram(char *name, struct pcb* program_pcb, char **args)
     // >>>> memory page indicated by that PTE's pfn field.  Set all
     // >>>> of these PTEs to be no longer valid.
     struct pte* user_table = program_pcb->page_table;
-    for (int i = 0; i < PAGE_TABLE_LEN; i++){
-        
+    int base = GET_PFN(KERNEL_STACK_BASE);
+    for (i = 0; i < PAGE_TABLE_LEN; i++){
+        if (i < base && user_table[i].valid == 1){
+            user_table[i].valid = 0;
+            setFrame(i, true);
+            TracePrintf(1, "Invalidate vpn %d\n", i);
+        }
     }
+    TracePrintf(1, "Reset user page table\n");
 
     /*
      *  Fill in the page table with the right number of text,
@@ -190,34 +196,64 @@ LoadProgram(char *name, struct pcb* program_pcb, char **args)
      *  from the file.  We then change them read/execute.
      */
 
-    >>>> Leave the first MEM_INVALID_PAGES number of PTEs in the
-    >>>> Region 0 page table unused (and thus invalid)
+    // >>>> Leave the first MEM_INVALID_PAGES number of PTEs in the
+    // >>>> Region 0 page table unused (and thus invalid)
+    int k;
+    for (i = 0; i < MEM_INVALID_PAGES; i++){
+        user_table[i].valid = 0;
+        TracePrintf(1, "Invalidate vpn %d\n", i);
+    }
 
     /* First, the text pages */
-    >>>> For the next text_npg number of PTEs in the Region 0
-    >>>> page table, initialize each PTE:
-    >>>>     valid = 1
-    >>>>     kprot = PROT_READ | PROT_WRITE
-    >>>>     uprot = PROT_READ | PROT_EXEC
-    >>>>     pfn   = a new page of physical memory
-
+    // >>>> For the next text_npg number of PTEs in the Region 0
+    // >>>> page table, initialize each PTE:
+    // >>>>     valid = 1
+    // >>>>     kprot = PROT_READ | PROT_WRITE
+    // >>>>     uprot = PROT_READ | PROT_EXEC
+    // >>>>     pfn   = a new page of physical memory
+    k = MEM_INVALID_PAGES;
+    for (i = 0; i < text_npg; i++){
+        user_table[i + k].valid = 1;
+        user_table[i + k].kprot = (PROT_READ | PROT_WRITE);
+        user_table[i + k].uprot = (PROT_READ | PROT_EXEC);
+        user_table[i + k].pfn = getFreeFrame();
+        TracePrintf(1, "map vpn %d to pfn %d\n", i+k, user_table[i + k].pfn);
+    }
+    TracePrintf(1, "Updated text section\n");
     /* Then the data and bss pages */
-    >>>> For the next data_bss_npg number of PTEs in the Region 0
-    >>>> page table, initialize each PTE:
-    >>>>     valid = 1
-    >>>>     kprot = PROT_READ | PROT_WRITE
-    >>>>     uprot = PROT_READ | PROT_WRITE
-    >>>>     pfn   = a new page of physical memory
-
+    // >>>> For the next data_bss_npg number of PTEs in the Region 0
+    // >>>> page table, initialize each PTE:
+    // >>>>     valid = 1
+    // >>>>     kprot = PROT_READ | PROT_WRITE
+    // >>>>     uprot = PROT_READ | PROT_WRITE
+    // >>>>     pfn   = a new page of physical memory
+    k += text_npg;
+    for (i = 0; i < data_bss_npg; i++){
+        user_table[i + k].valid = 1;
+        user_table[i + k].kprot = (PROT_READ | PROT_WRITE);
+        user_table[i + k].uprot = (PROT_READ | PROT_WRITE);
+        user_table[i + k].pfn = getFreeFrame();
+        TracePrintf(1, "map vpn %d to pfn %d\n", i+k, user_table[i + k].pfn);
+    }
+        TracePrintf(1, "Updated data/bss section\n");
     /* And finally the user stack pages */
-    >>>> For stack_npg number of PTEs in the Region 0 page table
-    >>>> corresponding to the user stack (the last page of the
-    >>>> user stack *ends* at virtual address USER_STACK_LIMIT),
-    >>>> initialize each PTE:
-    >>>>     valid = 1
-    >>>>     kprot = PROT_READ | PROT_WRITE
-    >>>>     uprot = PROT_READ | PROT_WRITE
-    >>>>     pfn   = a new page of physical memory
+    // >>>> For stack_npg number of PTEs in the Region 0 page table
+    // >>>> corresponding to the user stack (the last page of the
+    // >>>> user stack *ends* at virtual address USER_STACK_LIMIT),
+    // >>>> initialize each PTE:
+    // >>>>     valid = 1
+    // >>>>     kprot = PROT_READ | PROT_WRITE
+    // >>>>     uprot = PROT_READ | PROT_WRITE
+    // >>>>     pfn   = a new page of physical memory
+    k = GET_PFN(USER_STACK_LIMIT) - stack_npg;
+    for (i = 0; i < stack_npg; i++){
+        user_table[i + k].valid = 1;
+        user_table[i + k].kprot = (PROT_READ | PROT_WRITE);
+        user_table[i + k].uprot = (PROT_READ | PROT_WRITE);
+        user_table[i + k].pfn = getFreeFrame();
+        TracePrintf(1, "map vpn %d to pfn %d\n", i+k, user_table[i + k].pfn);
+    }
+    TracePrintf(1, "Updated stack section\n");
 
     /*
      *  All pages for the new address space are now in place.  Flush
@@ -225,20 +261,21 @@ LoadProgram(char *name, struct pcb* program_pcb, char **args)
      *  we'll be able to do the read() into the new pages below.
      */
     WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_0);
+    TracePrintf(1, "Write to TLB FLUSH\n");
 
     /*
      *  Read the text and data from the file into memory.
      */
     if (read(fd, (void *)MEM_INVALID_SIZE, li.text_size+li.data_size)
 	!= li.text_size+li.data_size) {
-	TracePrintf(0, "LoadProgram: couldn't read for '%s'\n", name);
-	free(argbuf);
-	close(fd);
-	>>>> Since we are returning -2 here, this should mean to
-	>>>> the rest of the kernel that the current process should
-	>>>> be terminated with an exit status of ERROR reported
-	>>>> to its parent process.
-	return (-2);
+    	TracePrintf(0, "LoadProgram: couldn't read for '%s'\n", name);
+    	free(argbuf);
+    	close(fd);
+    	// >>>> Since we are returning -2 here, this should mean to
+    	// >>>> the rest of the kernel that the current process should
+    	// >>>> be terminated with an exit status of ERROR reported
+    	// >>>> to its parent process.
+    	return (-2);
     }
 
     close(fd);			/* we've read it all now */
@@ -247,9 +284,13 @@ LoadProgram(char *name, struct pcb* program_pcb, char **args)
      *  Now set the page table entries for the program text to be readable
      *  and executable, but not writable.
      */
-    >>>> For text_npg number of PTEs corresponding to the user text
-    >>>> pages, set each PTE's kprot to PROT_READ | PROT_EXEC.
-
+    // >>>> For text_npg number of PTEs corresponding to the user text
+    // >>>> pages, set each PTE's kprot to PROT_READ | PROT_EXEC.
+    k = MEM_INVALID_PAGES;
+    for (i = 0; i < text_npg; i++){
+        user_table[i + k].kprot = (PROT_READ | PROT_EXEC);
+    }
+    TracePrintf(1, "Update text section with exec priority\n");
     WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_0);
 
     /*
@@ -261,7 +302,9 @@ LoadProgram(char *name, struct pcb* program_pcb, char **args)
     /*
      *  Set the entry point in the exception frame.
      */
-    >>>> Initialize pc for the current process to (void *)li.entry
+    // >>>> Initialize pc for the current process to (void *)li.entry
+    frame->pc = (void *)li.entry;
+    TracePrintf(1, "Update frame pc to %d\n", frame->pc);
 
     /*
      *  Now, finally, build the argument list on the new stack.
@@ -285,9 +328,13 @@ LoadProgram(char *name, struct pcb* program_pcb, char **args)
      *  value for the PSR will make the process run in user mode,
      *  since this PSR value of 0 does not have the PSR_MODE bit set.
      */
-    >>>> Initialize regs[0] through regs[NUM_REGS-1] for the
-    >>>> current process to 0.
-    >>>> Initialize psr for the current process to 0.
+    // >>>> Initialize regs[0] through regs[NUM_REGS-1] for the
+    // >>>> current process to 0.
+    // >>>> Initialize psr for the current process to 0.
+    for (i=0; i<NUM_REGS; i++) {
+        frame->regs[i] = 0;
+    }
+    frame->psr = 0;
 
     return (0);
 }

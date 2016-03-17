@@ -37,11 +37,13 @@ struct pte* initializeUserPageTable(struct pte* page_table) {
     int limit = GET_PFN(KERNEL_STACK_LIMIT);
     int base = GET_PFN(KERNEL_STACK_BASE);
 
+    //validate kernel stack
     for(i = base; i <= limit; i++) {
         (page_table + i) -> valid = 1;
         (page_table + i) -> pfn = i;
         (page_table + i) -> kprot = (PROT_READ|PROT_WRITE);
         (page_table + i) -> uprot = (PROT_NONE);
+        setFrame(i, false);
     }
     return page_table;
 }
@@ -62,7 +64,7 @@ struct pcb* makePCB(struct pcb* parent, struct pte* page_table){
     // Initiate pcb
     pcb_ptr = (struct pcb *)malloc(sizeof(struct pcb));
 
-    pcb_ptr->pid = PID++;
+    pcb_ptr->pid = ++PID;
     pcb_ptr->process_state = 0;
     pcb_ptr->context = NULL;
     pcb_ptr->parent = parent;
@@ -78,7 +80,7 @@ struct pcb* makePCB(struct pcb* parent, struct pte* page_table){
 /**
  * Initialize a list of frames
  */
-int initialize_frames(int num_of_free_frames){
+int initializeFrames(int num_of_free_frames){
     free_frames = (struct frame*)malloc(sizeof(struct frame) * num_of_free_frames);
     num_frames = num_of_free_frames;
     num_free_frames = num_of_free_frames;
@@ -94,7 +96,7 @@ int initialize_frames(int num_of_free_frames){
 /**
  * Set the free state of the frame
  */
-int set_frame(int index, bool state){
+int setFrame(int index, bool state){
     free_frames[index].free = state;
     if (state == true){
         num_free_frames++;
@@ -107,11 +109,11 @@ int set_frame(int index, bool state){
 /**
  * Greedily get the first free frame
  */
-int get_free_frame(){
+int getFreeFrame(){
     int i;
     for (i = 0; i < num_frames; i++){
         if (free_frames[i].free == true){
-            set_frame(i, false);
+            setFrame(i, false);
             return i;
         }
     }

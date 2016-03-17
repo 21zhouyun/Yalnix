@@ -6,6 +6,6 @@ int SetKernelBrk(void *addr);
 void KernelStart(ExceptionStackFrame *frame, unsigned int pmem_size, void *orig_brk, char **cmd_args);
 
 int InitFrames(unsigned int pmem_size);
-
-int InitPageTable(ExceptionStackFrame *frame);
+int InitPageTable();
+int MakeInitProcess(ExceptionStackFrame *frame, char **cmd_args);
 
