@@ -1,2 +1,54 @@
-
-ABORT: EnableVM: PTE for kernel text vpn 512 addr 0x200000 is not valid
+** Kernel   level 2 tracing enabled **
+Kernel   Done initializing trap vector
+Kernel   virtual memory is not enabled.
+Kernel   There are 1024 free frames available
+Kernel   Frame list length: 1024
+Kernel   virtual memory is not enabled.
+Kernel   Kernel heap limit 530
+Kernel   Kernel text limit 525
+Kernel   Finished creating PCB for init process with pc: 26, sp: 0, psr: 66050
+Kernel   LoadProgram 'init', args 0x1fffe0
+Kernel   LoadProgram: LoadInfo status 0
+Kernel   text_size 0x7000, data_size 0x130, bss_size 0x3098
+Kernel   entry 0x10100
+Kernel   LoadProgram: size 0, argcount 0
+Kernel   LoadProgram: text_npg 7, data_bss_npg 4, stack_npg 1
+Kernel   Update frame sp
+Kernel   Reset user page table
+Kernel   Invalidate vpn 0
+Kernel   Invalidate vpn 1
+Kernel   Invalidate vpn 2
+Kernel   Invalidate vpn 3
+Kernel   Invalidate vpn 4
+Kernel   Invalidate vpn 5
+Kernel   Invalidate vpn 6
+Kernel   Invalidate vpn 7
+Kernel   Invalidate vpn 8
+Kernel   Invalidate vpn 9
+Kernel   Invalidate vpn 10
+Kernel   Invalidate vpn 11
+Kernel   Invalidate vpn 12
+Kernel   Invalidate vpn 13
+Kernel   Invalidate vpn 14
+Kernel   Invalidate vpn 15
+Kernel   map vpn 16 to pfn 0
+Kernel   map vpn 17 to pfn 1
+Kernel   map vpn 18 to pfn 2
+Kernel   map vpn 19 to pfn 3
+Kernel   map vpn 20 to pfn 4
+Kernel   map vpn 21 to pfn 5
+Kernel   map vpn 22 to pfn 6
+Kernel   Updated text section
+Kernel   map vpn 23 to pfn 7
+Kernel   map vpn 24 to pfn 8
+Kernel   map vpn 25 to pfn 9
+Kernel   map vpn 26 to pfn 10
+Kernel   Updated data/bss section
+Kernel   map vpn 506 to pfn 11
+Kernel   Updated stack section
+Kernel   Write to TLB FLUSH
+Kernel   Update text section with exec priority
+Kernel   Update frame pc to 65792
+Kernel   Init process initialized at pid 1
+Kernel   New pc for init process 65792
+Kernel   ClockHandler

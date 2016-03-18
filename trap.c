@@ -6,6 +6,7 @@
 
 void *trap_vector[TRAP_VECTOR_SIZE];
 
+
 void InitTrapVector() {
     int i;
     for (i = 0; i < TRAP_VECTOR_SIZE; i++)
@@ -30,7 +31,7 @@ void KernelCallHandler(ExceptionStackFrame *state){
 
 void ClockHandler(ExceptionStackFrame *state){
     TracePrintf(0, "ClockHandler\n");
-    Halt();
+    // Halt();
 }
 
 void IllegalHandler(ExceptionStackFrame *state){

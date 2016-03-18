@@ -101,6 +101,8 @@ int MakeInitProcess(ExceptionStackFrame *frame, char **cmd_args){
 
     TracePrintf(1, "Finished creating PCB for init process with pc: %d, sp: %d, psr: %d\n", init_pcb->pc, init_pcb->sp, init_pcb->psr);
     // Load the program.
+    // TODO: load an idle program here and then load the init program
+    // after that, test context switch.
     if(LoadProgram("init", cmd_args, init_pcb) != 0) {
         return -1;
     }
