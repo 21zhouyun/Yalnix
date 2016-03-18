@@ -7,5 +7,6 @@ main()
 {
     while (1){
         TracePrintf(1, "init program!\n");
+        // printf("%s\n", "init program!");
     }
 }
