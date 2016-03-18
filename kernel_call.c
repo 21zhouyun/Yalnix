@@ -3,11 +3,11 @@
 #include "memutil.h"
 #include "ctxswitch.h"
 
-int GetPid(void){
+int GetPidHandler(void){
     return current_pcb->pid;
 }
 
-int Delay(int clock_ticks){
+int DelayHandler(int clock_ticks){
     if (clock_ticks == 0){
         return 0;
     }
