@@ -28,10 +28,21 @@ extern int LoadProgram(char *name, char **args, struct pcb* program_pcb);
 
 int SetKernelBrk(void *addr) {
     if (vm_enable) {
-        // TODO
+        
+        if (addr < kernel_brk) {
+            return -1;
+        } else if (addr == kernel_brk) {
+            return 0;
+        } else {
+            addr = (void *) UP_TO_PAGE(addr);
+            int numNeededPages = (addr - kernel_brk) / PAGESIZE;
+            // TODO
+            kernel_brk = addr;
+            return 0;
+        }
     } else {
         TracePrintf(1, "virtual memory is not enabled.\n");
-        kernel_brk = addr;
+        kernel_brk = (void *) UP_TO_PAGE(addr);
     }
     return 0;
 }
@@ -39,7 +50,7 @@ int SetKernelBrk(void *addr) {
 void KernelStart(ExceptionStackFrame *frame,
     unsigned int pmem_size, void *orig_brk, char **cmd_args){
 
-    kernel_brk = orig_brk;
+    kernel_brk = (void *) UP_TO_PAGE(orig_brk);
 
     InitTrapVector();
 
@@ -132,4 +143,3 @@ struct pcb* MakeProcess(char* name, ExceptionStackFrame *frame, char **cmd_args,
     
     return process_pcb;
 }
-
