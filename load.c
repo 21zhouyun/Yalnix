@@ -178,6 +178,7 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb)
     // >>>> memory page indicated by that PTE's pfn field.  Set all
     // >>>> of these PTEs to be no longer valid.
     struct pte* user_table = program_pcb->page_table;
+    //TracePrintf(1, "Got page table\n");
     int base = GET_PFN(KERNEL_STACK_BASE);
     for (i = 0; i < PAGE_TABLE_LEN; i++){
         if (i < base && user_table[i].valid == 1){

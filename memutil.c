@@ -1,6 +1,7 @@
 #include <comp421/hardware.h>
 #include <comp421/yalnix.h>
 #include "memutil.h"
+#include "queue.h"
 #include <stdlib.h>
 
 /* Globals */
@@ -64,11 +65,12 @@ struct pcb* makePCB(struct pcb* parent, struct pte* page_table){
     // Initiate pcb
     pcb_ptr = (struct pcb *)malloc(sizeof(struct pcb));
 
-    pcb_ptr->pid = ++PID;
+    pcb_ptr->pid = PID++;
     pcb_ptr->process_state = 0;
-    pcb_ptr->context = NULL;
+    pcb_ptr->delay_remain = 0;
+    pcb_ptr->context = malloc(sizeof(SavedContext));
     pcb_ptr->parent = parent;
-    pcb_ptr->children = makeQueue(10);
+    pcb_ptr->children = makeQueue(MAX_NUM_CHILDREN);
     pcb_ptr->frame = NULL;
     pcb_ptr->pc = NULL;
     pcb_ptr->sp = NULL;
@@ -118,4 +120,39 @@ int getFreeFrame(){
         }
     }
     return -1;
+}
+
+int initializeQueues(){
+    ready_q = makeQueue(MAX_QUEUE_SIZE);
+    waiting_q = makeQueue(MAX_QUEUE_SIZE);
+    delay_q = makeQueue(MAX_QUEUE_SIZE);
+    return 0;
+}
+
+int enqueue_ready(struct pcb* process_pcb){
+    enqueue(ready_q, process_pcb);
+    TracePrintf(1, "Enqueued pid %d into ready queue (%d)\n", process_pcb->pid, ready_q->length);
+    return 0;
+}
+int enqueue_waiting(struct pcb* process_pcb){
+    enqueue(waiting_q, process_pcb);
+    TracePrintf(1, "Enqueued pid %d into waiting queue (%d)\n", process_pcb->pid, ready_q->length);
+    return 0;
+}
+int enqueue_delay(struct pcb* process_pcb){
+    enqueue(delay_q, process_pcb);
+    TracePrintf(1, "Enqueued pid %d into delay queue (%d)\n", process_pcb->pid, ready_q->length);
+    return 0;
+}
+struct pcb* dequeue_ready(){
+    if (ready_q->length == 0){
+        return idle_pcb;
+    }
+    return (struct pcb*)(dequeue(ready_q)->value);
+}
+struct pcb* dequeue_waiting(){
+    return (struct pcb*)(dequeue(waiting_q)->value);
+}
+struct pcb* dequeue_delay(){
+    return (struct pcb*)(dequeue(delay_q)->value);
 }

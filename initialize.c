@@ -14,7 +14,11 @@ bool vm_enable = false;
 
 // page tables
 struct pte* kernel_page_table;
-struct pte* user_page_table; // page table for init process
+struct pte* init_page_table; // page table for init process
+struct pte* idle_page_table; // page table for idle process
+
+// pcb
+struct pcb* init_pcb; 
 
 // kernel brk
 void *kernel_brk;
@@ -47,7 +51,22 @@ void KernelStart(ExceptionStackFrame *frame,
 
     // initialize page table
     InitPageTable();
-    MakeInitProcess(frame, cmd_args);
+
+    // load idle first so we run init first
+    // the idle page table is alligned
+    idle_pcb = MakeProcess("idle", frame, cmd_args, idle_page_table);
+    
+    // the init page table is just a normal user page table.
+    init_page_table = makePageTable();
+    init_page_table = initializeUserPageTable(init_page_table);
+    init_pcb = MakeProcess("init", frame, cmd_args, init_page_table);
+    
+    initializeQueues();
+    enqueue_ready(init_pcb);
+    // enqueue_ready(idle_pcb);
+
+    current_pcb = dequeue_ready();
+    TracePrintf(1, "Dequeued process with pid %d from ready queue\n", current_pcb->pid);
 }
 
 
@@ -55,8 +74,8 @@ void KernelStart(ExceptionStackFrame *frame,
 int InitPageTable(){
     int i;
     kernel_page_table = makePageTable();
-    user_page_table = makePageTable();
-    user_page_table = initializeUserPageTable(user_page_table);
+    idle_page_table = makePageTable();
+    idle_page_table = initializeUserPageTable(idle_page_table);
 
     int kernel_heap_limit = GET_PFN(kernel_brk);
     int kernel_text_limit = GET_PFN(&_etext);
@@ -80,7 +99,7 @@ int InitPageTable(){
         setFrame(i, false);
     }
 
-    WriteRegister( REG_PTR0, (RCS421RegVal) user_page_table);
+    WriteRegister( REG_PTR0, (RCS421RegVal) idle_page_table);
     WriteRegister( REG_PTR1, (RCS421RegVal) kernel_page_table);
 
 
@@ -90,26 +109,27 @@ int InitPageTable(){
     return 0;
 }
 
-int MakeInitProcess(ExceptionStackFrame *frame, char **cmd_args){
-    //create init program pcb
-    //TODO: is this the correct way to init?
-    struct pcb* init_pcb = makePCB(NULL, user_page_table);
-    init_pcb->pc = frame->pc;
-    init_pcb->sp = frame->sp;
-    init_pcb->psr = frame->psr;
-    init_pcb->frame = frame;
+struct pcb* MakeProcess(char* name, ExceptionStackFrame *frame, char **cmd_args, struct pte* page_table){
+    struct pcb* process_pcb = makePCB(NULL, page_table);
+    process_pcb->pc = frame->pc;
+    process_pcb->sp = frame->sp;
+    process_pcb->psr = frame->psr;
+    process_pcb->frame = frame;
 
-    TracePrintf(1, "Finished creating PCB for init process with pc: %d, sp: %d, psr: %d\n", init_pcb->pc, init_pcb->sp, init_pcb->psr);
+    TracePrintf(1, "Finished creating PCB for pid %d with pc: %d, sp: %d, psr: %d\n", process_pcb->pid, process_pcb->pc, process_pcb->sp, process_pcb->psr);
+    //Before loading the program, switch in its page table.
+    //WARNING, This is a hack that only works for idle and init initialization!!!
+    WriteRegister( REG_PTR0, (RCS421RegVal) page_table);
+
     // Load the program.
-    // TODO: load an idle program here and then load the init program
-    // after that, test context switch.
-    if(LoadProgram("init", cmd_args, init_pcb) != 0) {
-        return -1;
+    if(LoadProgram(name, cmd_args, process_pcb) != 0) {
+        return NULL;
     }
     if (vm_enable) {
         WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_0);
     }
-    TracePrintf(1, "Init process initialized at pid %d\n", init_pcb->pid);
-    TracePrintf(1, "New pc for init process %d\n", init_pcb->frame->pc);
-    return 0;
+    TracePrintf(1, "Process initialized at pid %d\n", process_pcb->pid);
+    
+    return process_pcb;
 }
+
