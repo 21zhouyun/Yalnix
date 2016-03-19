@@ -14,7 +14,7 @@ main()
 	TracePrintf(1, "Check if content equals: 5 == %d \n", *(int*)a);
 	free(b);
 	TracePrintf(1, "b freed: %p\n", b);
-	//TracePrintf(1, "Now try to access an invalid page, should see error: %p\n", *(char *) ((int)b + 4096));
+	//TracePrintf(1, "Now try to access an invalid page, should see error: %p\n", *(int *) ((int)b + 4096));
 	void * c = malloc (4096 * 10);
 	TracePrintf(1, "Address allocated, c: %p\n", c);
 
