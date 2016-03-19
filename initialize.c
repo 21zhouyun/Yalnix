@@ -27,6 +27,8 @@ void *kernel_brk;
 extern int LoadProgram(char *name, char **args, struct pcb* program_pcb);
 
 int SetKernelBrk(void *addr) {
+    int numNeededPages, pfn, vpn, i;
+
     if (vm_enable) {
         
         if (addr < kernel_brk) {
@@ -35,8 +37,17 @@ int SetKernelBrk(void *addr) {
             return 0;
         } else {
             addr = (void *) UP_TO_PAGE(addr);
-            int numNeededPages = (addr - kernel_brk) / PAGESIZE;
-            // TODO
+            numNeededPages = (addr - kernel_brk) / PAGESIZE;
+            for (i = 0; i < numNeededPages; ++i) {
+                pfn = getFreeFrame();
+                if (pfn == -1)
+                    return -1;
+                vpn = ((kernel_brk - VMEM_1_BASE)>>PAGESHIFT) + i;
+                kernel_page_table[vpn]->valid = 1;
+                kernel_page_table[vpn]->pfn = pfn;
+                kernel_page_table[vpn]->kprot = (PROT_READ | PROT_WRITE);
+                   
+            }
             kernel_brk = addr;
             return 0;
         }
