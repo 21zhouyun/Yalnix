@@ -18,7 +18,6 @@ SavedContext *MySwitchFunc(SavedContext *ctxp, void *p1, void *p2)
 		// Doing context switch
 		struct pcb *pcb1 = (struct pcb *) p1;
 		struct pcb *pcb2 = (struct pcb *) p2;
-		// pcb1->context = ctxp;
 
 		WriteRegister(REG_PTR0, (RCS421RegVal) pcb2->page_table);
 		WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);

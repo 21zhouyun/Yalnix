@@ -36,7 +36,7 @@
  *  in this case.
  */
 int
-LoadProgram(char *name, char **args, struct pcb* program_pcb)
+LoadProgram(char *name, char **args, struct pcb* program_pcb, ExceptionStackFrame *frame)
 {
     int fd;
     int status;
@@ -51,8 +51,6 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb)
     int text_npg;
     int data_bss_npg;
     int stack_npg;
-
-    ExceptionStackFrame* frame = program_pcb->frame;
 
     TracePrintf(0, "LoadProgram '%s', args %p\n", name, args);
 

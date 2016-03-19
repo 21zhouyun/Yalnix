@@ -22,7 +22,7 @@ void *kernel_brk;
 char **args;
 
 // externs
-extern int LoadProgram(char *name, char **args, struct pcb* program_pcb);
+extern int LoadProgram(char *name, char **args, struct pcb* program_pcb, ExceptionStackFrame *frame);
 
 int SetKernelBrk(void *addr) {
     int numNeededPages, pfn, vpn, i;
@@ -134,18 +134,14 @@ struct pcb* MakeProcess(char* name, ExceptionStackFrame *frame, char **cmd_args,
     //WARNING, This is a hack that only works for idle and init initialization!!!
     WriteRegister(REG_PTR0, (RCS421RegVal) process_pcb->page_table);
 
-    process_pcb->frame = frame;
-
-    TracePrintf(1, "Finished creating PCB for pid %d with pc: %d, sp: %d, psr: %d\n", process_pcb->pid, process_pcb->pc, process_pcb->sp, process_pcb->psr);
+    TracePrintf(1, "Finished creating PCB for pid %d, psr: %d\n", process_pcb->pid, process_pcb->psr);
 
     // Load the program.
-    if(LoadProgram(name, cmd_args, process_pcb) != 0) {
+    if(LoadProgram(name, cmd_args, process_pcb, frame) != 0) {
         return NULL;
     }
 
     process_pcb->process_state = LOADED;
-    process_pcb->pc = frame->pc;
-    process_pcb->sp = frame->sp;
     process_pcb->psr = frame->psr;
 
     if (vm_enable) {
@@ -161,17 +157,13 @@ struct pcb* MakeIdle(ExceptionStackFrame *frame, struct pcb* process_pcb){
     //WARNING, This is a hack that only works for idle and init initialization!!!
     WriteRegister(REG_PTR0, (RCS421RegVal) process_pcb->page_table);
 
-    process_pcb->frame = frame;
-
-    TracePrintf(1, "Finished creating PCB for pid %d with pc: %d, sp: %d, psr: %d\n", process_pcb->pid, process_pcb->pc, process_pcb->sp, process_pcb->psr);
+    TracePrintf(1, "Finished creating PCB for pid %d, psr: %d\n", process_pcb->pid, process_pcb->psr);
 
     // Load the program.
-    if(LoadProgram("idle", args, process_pcb) != 0) {
+    if(LoadProgram("idle", args, process_pcb, frame) != 0) {
         return NULL;
     }
     process_pcb->process_state = LOADED;
-    process_pcb->pc = frame->pc;
-    process_pcb->sp = frame->sp;
     process_pcb->psr = frame->psr;
 
     if (vm_enable) {

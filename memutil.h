@@ -39,9 +39,6 @@ struct pcb{
     SavedContext *context;
     struct pcb* parent;
     queue* children;
-    ExceptionStackFrame *frame;//TODO: check if we really need this
-    void *pc; //program counter
-    void *sp; //stack pointer
     unsigned long psr;
     void *current_brk;
     struct pte* page_table; // address space of this process
