@@ -130,6 +130,7 @@ struct pcb* makePCB(struct pcb* parent, struct pte* page_table){
     pcb_ptr->frame = NULL;
     pcb_ptr->pc = NULL;
     pcb_ptr->sp = NULL;
+    pcb_ptr->current_brk = VMEM_0_BASE;
     pcb_ptr->page_table = page_table;
 
     return pcb_ptr;

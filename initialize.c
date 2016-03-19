@@ -25,11 +25,33 @@ char **args;
 extern int LoadProgram(char *name, char **args, struct pcb* program_pcb);
 
 int SetKernelBrk(void *addr) {
+    int numNeededPages, pfn, vpn, i;
+
     if (vm_enable) {
-        // TODO
+        
+        if (addr < kernel_brk || addr > VMEM_1_LIMIT) {
+            return -1;
+        } else if (addr == kernel_brk) {
+            return 0;
+        } else {
+            addr = (void *) UP_TO_PAGE(addr);
+            numNeededPages = (addr - kernel_brk) / PAGESIZE;
+            for (i = 0; i < numNeededPages; ++i) {
+                pfn = getFreeFrame();
+                if (pfn == -1)
+                    return -1;
+                vpn = ((kernel_brk - VMEM_1_BASE)>>PAGESHIFT) + i;
+                kernel_page_table[vpn]->valid = 1;
+                kernel_page_table[vpn]->pfn = pfn;
+                kernel_page_table[vpn]->kprot = (PROT_READ | PROT_WRITE);
+                   
+            }
+            kernel_brk = addr;
+            return 0;
+        }
     } else {
         TracePrintf(1, "virtual memory is not enabled.\n");
-        kernel_brk = addr;
+        kernel_brk = (void *) UP_TO_PAGE(addr);
     }
     return 0;
 }
@@ -37,8 +59,9 @@ int SetKernelBrk(void *addr) {
 void KernelStart(ExceptionStackFrame *frame,
     unsigned int pmem_size, void *orig_brk, char **cmd_args){
 
-    kernel_brk = orig_brk;
     args = cmd_args;
+    kernel_brk = (void *) UP_TO_PAGE(orig_brk);
+
 
     InitTrapVector();
 
@@ -160,4 +183,3 @@ struct pcb* MakeIdle(ExceptionStackFrame *frame, struct pcb* process_pcb){
     
     return process_pcb;
 }
-

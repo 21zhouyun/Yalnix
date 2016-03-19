@@ -4,11 +4,11 @@
 #include "initialize.h"
 #include <stdlib.h>
 
-int KernelGetPid(void){
+int GetPidHandler(void){
     return current_pcb->pid;
 }
 
-int KernelDelay(int clock_ticks, ExceptionStackFrame *frame){
+int DelayHandler(int clock_ticks, ExceptionStackFrame *frame){
     if (clock_ticks == 0){
         return 0;
     }
@@ -32,4 +32,8 @@ int KernelDelay(int clock_ticks, ExceptionStackFrame *frame){
     }
 
     return 0;
+}
+
+int BrkHandler(void *addr){
+    
 }

@@ -43,6 +43,7 @@ struct pcb{
     void *pc; //program counter
     void *sp; //stack pointer
     unsigned long psr;
+    void *current_brk;
     struct pte* page_table; // address space of this process
 } pcb;
 
