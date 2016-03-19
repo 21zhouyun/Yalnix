@@ -97,8 +97,9 @@ void IllegalHandler(ExceptionStackFrame *frame){
 }
 
 void MemoryHandler(ExceptionStackFrame *frame){
-    //TracePrintf(0, "MemoryHandler\n");
-    // Halt();
+    TracePrintf(0, "MemoryHandler\n");
+    
+    Halt();
 }
 
 void MathHandler(ExceptionStackFrame *frame){
