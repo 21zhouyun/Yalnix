@@ -20,3 +20,7 @@ int DelayHandler(int clock_ticks){
     ContextSwitch(MySwitchFunc, next_pcb->context, current_pcb, next_pcb);
     return 0;
 }
+
+int BrkHandler(void *addr){
+    
+}

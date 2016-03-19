@@ -35,14 +35,31 @@ void KernelCallHandler(ExceptionStackFrame *frame){
      */
     TracePrintf(0, "KernelHandler\n");
     switch(frame->code){
+        case YALNIX_FORK:
+            break;
+        case YALNIX_EXEC:
+            break;
+        case YALNIX_EXIT:
+            break;
+        case YALNIX_WAIT:
+            break;
         case YALNIX_GETPID:
             TracePrintf(1, "GET PID\n");
             frame->regs[0] = GetPidHandler();
+            break;
+        case YALNIX_BRK:
+            TracePrintf(1, "BRK PID 0x%x.\n", current_pcb->pid);
+            frame->regs[0] = BrkHandler(frame->regs[1]);
             break;
         case YALNIX_DELAY:
             TracePrintf(1, "DELAY PID %d\n", current_pcb->pid);
             frame->regs[0] = DelayHandler(frame->regs[1]);
             break;
+        case YALNIX_TTY_READ:
+            break;
+        case YALNIX_TTY_WRITE:
+            break;
+
         default:
             TracePrintf(1, "Unknow kernel call!");
     }

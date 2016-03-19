@@ -31,7 +31,7 @@ int SetKernelBrk(void *addr) {
 
     if (vm_enable) {
         
-        if (addr < kernel_brk) {
+        if (addr < kernel_brk || addr > VMEM_1_LIMIT) {
             return -1;
         } else if (addr == kernel_brk) {
             return 0;
