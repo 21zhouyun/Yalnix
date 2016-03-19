@@ -40,6 +40,7 @@ struct pcb{
     struct pcb* parent;
     queue* children;
     unsigned long psr;
+    void *user_stack_limit;
     void *current_brk;
     struct pte* page_table; // address space of this process
 } pcb;
