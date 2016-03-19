@@ -40,10 +40,10 @@ int SetKernelBrk(void *addr) {
                 pfn = getFreeFrame();
                 if (pfn == -1)
                     return -1;
-                vpn = ((kernel_brk - VMEM_1_BASE)>>PAGESHIFT) + i;
-                kernel_page_table[vpn]->valid = 1;
-                kernel_page_table[vpn]->pfn = pfn;
-                kernel_page_table[vpn]->kprot = (PROT_READ | PROT_WRITE);
+                vpn = ((int)(kernel_brk - VMEM_1_BASE)>>PAGESHIFT) + i;
+                kernel_page_table[vpn].valid = 1;
+                kernel_page_table[vpn].pfn = pfn;
+                kernel_page_table[vpn].kprot = (PROT_READ | PROT_WRITE);
                    
             }
             kernel_brk = addr;
@@ -142,8 +142,6 @@ struct pcb* MakeProcess(char* name, ExceptionStackFrame *frame, char **cmd_args,
     if(LoadProgram(name, cmd_args, process_pcb) != 0) {
         return NULL;
     }
-    //init SavedContext
-    ContextSwitch(MySwitchFunc, process_pcb->context, process_pcb, NULL);
 
     process_pcb->process_state = LOADED;
     process_pcb->pc = frame->pc;

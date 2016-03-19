@@ -45,25 +45,17 @@ void KernelCallHandler(ExceptionStackFrame *frame){
             break;
         case YALNIX_GETPID:
             TracePrintf(1, "GET PID\n");
-<<<<<<< HEAD
-            frame->regs[0] = KernelGetPid();
+            frame->regs[0] = GetPidHandler();
             break;
         case YALNIX_DELAY:
             TracePrintf(1, "DELAY PID %d\n", current_pcb->pid);
-            frame->regs[0] = KernelDelay(frame->regs[1], frame);
-=======
-            frame->regs[0] = GetPidHandler();
+            frame->regs[0] = DelayHandler(frame->regs[1], frame);
             break;
         case YALNIX_BRK:
             TracePrintf(1, "BRK PID 0x%x.\n", current_pcb->pid);
             frame->regs[0] = BrkHandler(frame->regs[1]);
             break;
-        case YALNIX_DELAY:
-            TracePrintf(1, "DELAY PID %d\n", current_pcb->pid);
-            frame->regs[0] = DelayHandler(frame->regs[1]);
-            break;
         case YALNIX_TTY_READ:
->>>>>>> bc875bc2983a9669bc9e403ac6d3f92b52843f0e
             break;
         case YALNIX_TTY_WRITE:
             break;
