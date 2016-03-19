@@ -3,6 +3,9 @@
 #include "memutil.h"
 #include "queue.h"
 #include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
+
 
 /* Globals */
 int PID = 0;
@@ -22,31 +25,83 @@ struct pte* makePageTable(){
 struct pte* invalidatePageTable(struct pte* page_table){
     int i;
     for (i = 0; i < PAGE_TABLE_LEN; i++) {
-        (page_table + i) -> valid = 0;
-        (page_table + i) -> kprot = PROT_NONE;
-        (page_table + i) -> uprot = PROT_NONE;
-        (page_table + i) -> pfn = PFN_INVALID;
+        page_table[i].valid = 0;
+        page_table[i].kprot = PROT_NONE;
+        page_table[i].uprot = PROT_NONE;
+        page_table[i].pfn = PFN_INVALID;
     }
     return page_table;
 }
 
 /**
- * Initialize a page table for region 0
+ * Initialize a page table for Init process
  */
-struct pte* initializeUserPageTable(struct pte* page_table) {
+struct pte* initializeInitPageTable(struct pte* page_table) {
     int i;
-    int limit = GET_PFN(KERNEL_STACK_LIMIT);
-    int base = GET_PFN(KERNEL_STACK_BASE);
+    int limit = GET_VPN(KERNEL_STACK_LIMIT);
+    int base = GET_VPN(KERNEL_STACK_BASE);
 
     //validate kernel stack
-    for(i = base; i <= limit; i++) {
-        (page_table + i) -> valid = 1;
-        (page_table + i) -> pfn = i;
-        (page_table + i) -> kprot = (PROT_READ|PROT_WRITE);
-        (page_table + i) -> uprot = (PROT_NONE);
+    for(i = base; i < limit; i++) {
+        page_table[i].valid = 1;
+        // VM shouldn't be enabled for this.
+        page_table[i].pfn = i;
+        page_table[i].kprot = (PROT_READ|PROT_WRITE);
+        page_table[i].uprot = (PROT_NONE);
         setFrame(i, false);
     }
     return page_table;
+}
+
+/**
+ * Copy the current process' kernel stack to the given page table
+ */
+struct pte* initializeUserPageTable(struct pte* page_table) {
+    int i;
+    int limit = GET_VPN(KERNEL_STACK_LIMIT);
+    int base = GET_VPN(KERNEL_STACK_BASE);
+
+    for(i = base; i < limit; i++) {
+        page_table[i].valid = 1;
+        page_table[i].pfn = getFreeFrame();
+        page_table[i].kprot = (PROT_READ|PROT_WRITE);
+        page_table[i].uprot = (PROT_NONE);
+    }
+
+    //copyKernelStackIntoTable(page_table);
+
+    return page_table;
+}
+
+// copy the kernel stack of the current process into the given page table
+int copyKernelStackIntoTable(struct pte *page_table){
+    int i;
+    int limit = GET_VPN(KERNEL_STACK_LIMIT);
+    int base = GET_VPN(KERNEL_STACK_BASE);
+
+    TracePrintf(1, "Copy current process stack\n");
+
+    for(i = base; i < limit ; i++) {
+        //HACK: map the pfn to the top of Region 1
+        kernel_page_table[i - GET_VPN(VMEM_0_BASE)].valid = 1;
+        kernel_page_table[i - GET_VPN(VMEM_0_BASE)].pfn = page_table[i].pfn;
+        TracePrintf(1, "Mapped PFN %x to VPN %x\n", page_table[i].pfn, i - GET_VPN(VMEM_0_BASE));
+        //TODO: better protection?
+        kernel_page_table[i - GET_VPN(VMEM_0_BASE)].kprot = (PROT_READ|PROT_WRITE);
+        kernel_page_table[i - GET_VPN(VMEM_0_BASE)].uprot = (PROT_READ|PROT_WRITE);
+    }
+
+    // copy the current process's kernel stack
+    for(i = base; i < limit; i++) {
+        TracePrintf(1, "Memcpy from %x to %x\n", i << PAGESHIFT, PAGE_TABLE_LEN * PAGESIZE + (i << PAGESHIFT));
+        memcpy(PAGE_TABLE_LEN * PAGESIZE + (i << PAGESHIFT), i << PAGESHIFT, PAGESIZE);
+    }
+
+    for(i = base; i < limit; i++) {
+        kernel_page_table[i].valid = 0;
+    }
+
+    return 0;
 }
 
 /**
@@ -57,16 +112,17 @@ struct pte* initializeUserPageTable(struct pte* page_table) {
 struct pcb* makePCB(struct pcb* parent, struct pte* page_table){
     struct pcb* pcb_ptr;
 
-    if (page_table == NULL){
-        page_table = makePageTable();
-        page_table = initializeUserPageTable(page_table);
-    }
+    // THIS IS PROBABLY WRONG!
+    // if (page_table == NULL){
+    //     page_table = makePageTable();
+    //     page_table = initializeUserPageTable(page_table);
+    // }
 
     // Initiate pcb
     pcb_ptr = (struct pcb *)malloc(sizeof(struct pcb));
 
     pcb_ptr->pid = PID++;
-    pcb_ptr->process_state = 0;
+    pcb_ptr->process_state = NOT_LOADED;
     pcb_ptr->delay_remain = 0;
     pcb_ptr->context = malloc(sizeof(SavedContext));
     pcb_ptr->parent = parent;
@@ -110,10 +166,11 @@ int setFrame(int index, bool state){
 
 /**
  * Greedily get the first free frame
+ * TODO: change this back to i=0
  */
 int getFreeFrame(){
     int i;
-    for (i = 0; i < num_frames; i++){
+    for (i = MEM_INVALID_PAGES; i < num_frames; i++){
         if (free_frames[i].free == true){
             setFrame(i, false);
             return i;

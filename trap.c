@@ -37,11 +37,11 @@ void KernelCallHandler(ExceptionStackFrame *frame){
     switch(frame->code){
         case YALNIX_GETPID:
             TracePrintf(1, "GET PID\n");
-            frame->regs[0] = GetPid();
+            frame->regs[0] = KernelGetPid();
             break;
         case YALNIX_DELAY:
             TracePrintf(1, "DELAY PID %d\n", current_pcb->pid);
-            frame->regs[0] = Delay(frame->regs[1]);
+            frame->regs[0] = KernelDelay(frame->regs[1], frame);
             break;
         default:
             TracePrintf(1, "Unknow kernel call!");
@@ -69,6 +69,7 @@ void ClockHandler(ExceptionStackFrame *frame){
     // see if we are in idle
     if (current_pcb->pid == 0 && ready_q->length > 0){
         struct pcb* next_pcb = dequeue_ready();
+        TracePrintf(1, "Found ready pid %d, swith to it.\n", next_pcb->pid);
         ContextSwitch(MySwitchFunc, current_pcb->context, current_pcb, next_pcb);
     }
 }

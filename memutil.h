@@ -3,17 +3,25 @@
 #include "queue.h"
 #include <stdbool.h>
 
-#define GET_PFN(addr) (((long) addr & PAGEMASK) >> PAGESHIFT)
+#define GET_VPN(addr) (((long) addr & PAGEMASK) >> PAGESHIFT)
 
 #define PFN_INVALID -1
 #define KERNEL_TABLE_OFFSET 512
 
 #define MAX_QUEUE_SIZE 1024
 #define MAX_NUM_CHILDREN 8
+// process states
+#define NOT_LOADED -1
+#define LOADED 0
 
 struct frame* free_frames;//global array of all free frames
 int num_frames;
 int num_free_frames;
+
+// page tables
+struct pte* kernel_page_table;
+struct pte* init_page_table; // page table for init process
+struct pte* idle_page_table; // page table for idle process
 
 struct pcb* idle_pcb; //pcb for idle process
 struct pcb* current_pcb; //pcb for current process
@@ -45,6 +53,8 @@ struct frame{
 // manage page tables
 struct pte* makePageTable();
 struct pte* invalidatePageTable(struct pte *page_table);
+struct pte* initializeInitPageTable(struct pte *page_table);
+int copyKernelStackIntoTable(struct pte *page_table);
 struct pte* initializeUserPageTable(struct pte *page_table);
 
 struct pcb* makePCB(struct pcb *parent, struct pte* page_table);

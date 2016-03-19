@@ -15,15 +15,19 @@ SavedContext *MySwitchFunc(SavedContext *ctxp, void *p1, void *p2)
 		// Doing context switch
 		struct pcb *pcb1 = (struct pcb *) p1;
 		struct pcb *pcb2 = (struct pcb *) p2;
-		TracePrintf(1, "Switch to page table at %d\n", pcb2->page_table);
-		// pcb1->process_state = READY;
-		// pcb2->process_state = RUNNING;
+		// pcb1->context = ctxp;
+
+		// copy kernel stack
+		copyKernelStackIntoTable(pcb2->page_table);
 
 		WriteRegister(REG_PTR0, (RCS421RegVal) pcb2->page_table);
 		WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);
 
 		//update currnet pcb
 		current_pcb = pcb2;
-		return ctxp;
+		TracePrintf(1, "Switch to page table at %d\n", pcb2->page_table);
+
+		//TODO: make sure this is the one we want to return??
+		return pcb2->context;
 	}
 }

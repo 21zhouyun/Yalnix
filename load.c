@@ -179,7 +179,7 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb)
     // >>>> of these PTEs to be no longer valid.
     struct pte* user_table = program_pcb->page_table;
     //TracePrintf(1, "Got page table\n");
-    int base = GET_PFN(KERNEL_STACK_BASE);
+    int base = GET_VPN(KERNEL_STACK_BASE);
     for (i = 0; i < PAGE_TABLE_LEN; i++){
         if (i < base && user_table[i].valid == 1){
             user_table[i].valid = 0;
@@ -246,7 +246,7 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb)
     // >>>>     kprot = PROT_READ | PROT_WRITE
     // >>>>     uprot = PROT_READ | PROT_WRITE
     // >>>>     pfn   = a new page of physical memory
-    k = GET_PFN(USER_STACK_LIMIT) - stack_npg;
+    k = GET_VPN(USER_STACK_LIMIT) - stack_npg;
     for (i = 0; i < stack_npg; i++){
         user_table[i + k].valid = 1;
         user_table[i + k].kprot = (PROT_READ | PROT_WRITE);
