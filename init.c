@@ -10,8 +10,8 @@ main()
 	void * b = malloc (4096 * 10);
 	TracePrintf(1, "Address allocated, a: %p, b: %p\n", a, b);
 	TracePrintf(1, "Writing to a letters 'aaa'.\n");
-	*(char *)a = "aaa";
-	TracePrintf(1, "Check if content equals: 'aaa' == '%s' \n", *(char*)a);
+	*(int *)a = 5;
+	TracePrintf(1, "Check if content equals: 5 == %d \n", *(int*)a);
 	free(b);
 	TracePrintf(1, "b freed: %p\n", b);
 	//TracePrintf(1, "Now try to access an invalid page, should see error: %p\n", *(char *) ((int)b + 4096));
