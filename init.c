@@ -21,8 +21,10 @@ main()
 
 	free(b);
 	TracePrintf(1, "b freed: %p\n", b);
-	TracePrintf(1, "Now try to write to an invalid page, should see implicit user stack growth, but in redzone:\n");
-	*(int *)((int)b+4096) = 5;
+	//Uncomment the following two lines should cause error
+	//TracePrintf(1, "Now try to write to an invalid page, should see implicit user stack growth, but in redzone:\n");
+	//*(int *)((int)b+4096) = 5;
+
 	//TracePrintf(1, "Now try to access an invalid page, should see error: %p\n", *(int *) ((int)b + 4096));
 	void * c = malloc (4096 * 10);
 	TracePrintf(1, "Address allocated, c: %p\n", c);
