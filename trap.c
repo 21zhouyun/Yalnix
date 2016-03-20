@@ -5,6 +5,7 @@
 #include "kernel_call.h"
 #include "memutil.h"
 #include "queue.h"
+#include "initialize.h"
 #include "ctxswitch.h"
 
 
@@ -47,13 +48,13 @@ void KernelCallHandler(ExceptionStackFrame *frame){
             TracePrintf(1, "GET PID\n");
             frame->regs[0] = GetPidHandler();
             break;
+        case YALNIX_DELAY:
+            TracePrintf(1, "DELAY PID %d\n", current_pcb->pid);
+            frame->regs[0] = DelayHandler(frame->regs[1], frame);
+            break;
         case YALNIX_BRK:
             TracePrintf(1, "BRK PID 0x%x.\n", current_pcb->pid);
             frame->regs[0] = BrkHandler(frame->regs[1]);
-            break;
-        case YALNIX_DELAY:
-            TracePrintf(1, "DELAY PID %d\n", current_pcb->pid);
-            frame->regs[0] = DelayHandler(frame->regs[1]);
             break;
         case YALNIX_TTY_READ:
             break;
@@ -97,8 +98,70 @@ void IllegalHandler(ExceptionStackFrame *frame){
 }
 
 void MemoryHandler(ExceptionStackFrame *frame){
-    //TracePrintf(0, "MemoryHandler\n");
-    // Halt();
+    TracePrintf(0, "MemoryHandler\n");
+
+    int numPagesToGrow, i, pfn, vpn;
+    void *addr = frame->addr;
+    bool stackGrew = false;
+    TracePrintf(2, "Memory address that caused the TRAP_MEMORY: %p\n", addr);
+    if (addr < current_pcb->user_stack_limit && addr > current_pcb->current_brk) {
+        TracePrintf(2, "MemoryHandler: Trying to grow user stack for process %d.\n", current_pcb->pid);
+        stackGrew = true;
+        numPagesToGrow = ((int)(current_pcb->user_stack_limit - addr)) >> PAGESHIFT;
+        vpn = (int) current_pcb->user_stack_limit >> PAGESHIFT;
+
+        /* Make sure we don't grow into the "red zone". */
+        if (current_pcb->page_table[vpn - 1].valid == 0) {
+            for (i = 0; i < numPagesToGrow; ++i) {
+                --vpn;
+                if (current_pcb->page_table[vpn - 1].valid == 1) {
+                    TracePrintf(2, "MemoryHandler: Keep growing would be going to red zone. Stop. \n");
+                    stackGrew = false;
+                    break;
+                }
+                pfn = getFreeFrame();
+                if (pfn == -1) {
+                    TracePrintf(2, "MemoryHandler: Not enough physical memory for user stack to grow.\n");
+                    stackGrew = false;
+                    break;
+                }
+                
+                current_pcb->page_table[vpn].pfn = pfn;
+                current_pcb->page_table[vpn].uprot = PROT_ALL;
+                current_pcb->page_table[vpn].kprot = PROT_ALL;
+                current_pcb->page_table[vpn].valid = 1;
+            }
+        } else {
+            stackGrew = false;
+            TracePrintf(2, "If we grow this stack we're in redzone.\n");
+
+        }
+        
+    }
+
+    if (!stackGrew) {
+        // TODO: see if there's a better way to do this?
+
+        // Terminate the current running process.
+        TracePrintf(2, "TRAP_MEMORY: MemoryHandler terminating process pid %d\n", current_pcb->pid);
+
+        // Run the next ready process.
+        struct pcb* next_pcb = dequeue_ready();
+        TracePrintf(1, "Context Switch to pid %d\n", next_pcb->pid);
+
+        if (next_pcb->pid == 0 && next_pcb->process_state == NOT_LOADED){    
+            // init a SavedContext for idle
+            ContextSwitch(MySwitchFunc, next_pcb->context, next_pcb, NULL);
+        }
+
+        ContextSwitch(MySwitchFunc, current_pcb->context, current_pcb, next_pcb);
+
+        if (next_pcb->pid == 0 && next_pcb->process_state == NOT_LOADED){
+            TracePrintf(1, "Load idle first time.\n");
+            next_pcb = MakeIdle(frame, next_pcb);
+        }
+        
+    }
 }
 
 void MathHandler(ExceptionStackFrame *frame){

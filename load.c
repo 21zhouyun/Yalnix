@@ -36,7 +36,7 @@
  *  in this case.
  */
 int
-LoadProgram(char *name, char **args, struct pcb* program_pcb)
+LoadProgram(char *name, char **args, struct pcb* program_pcb, ExceptionStackFrame *frame)
 {
     int fd;
     int status;
@@ -51,8 +51,6 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb)
     int text_npg;
     int data_bss_npg;
     int stack_npg;
-
-    ExceptionStackFrame* frame = program_pcb->frame;
 
     TracePrintf(0, "LoadProgram '%s', args %p\n", name, args);
 
@@ -133,11 +131,11 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb)
      */
     if (MEM_INVALID_PAGES + text_npg + data_bss_npg + stack_npg +
 	1 + KERNEL_STACK_PAGES >= PAGE_TABLE_LEN) {
-	TracePrintf(0, "LoadProgram: program '%s' size too large for VM\n",
-	    name);
-	free(argbuf);
-	close(fd);
-	return (-1);
+    	TracePrintf(0, "LoadProgram: program '%s' size too large for VM\n",
+    	    name);
+    	free(argbuf);
+    	close(fd);
+    	return (-1);
     }
 
     /*
@@ -152,11 +150,11 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb)
 //    >>>> freed below before we allocate the needed pages for
 //    >>>> the new program being loaded.
     if (num_free_frames < (text_npg + data_bss_npg + stack_npg)) {
-	TracePrintf(0,
-	    "LoadProgram: program '%s' size too large for physical memory\n",
-	    name);
-	free(argbuf); //TODO:What is this about?
-	close(fd);
+    	TracePrintf(0,
+    	    "LoadProgram: program '%s' size too large for physical memory\n",
+    	    name);
+    	free(argbuf); //TODO:What is this about?
+    	close(fd);
 	return (-1);
     }
 
@@ -337,5 +335,7 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb)
     }
     frame->psr = 0;
 
+    /* Set heap's initial break*/
+    program_pcb->current_brk = (MEM_INVALID_PAGES + text_npg + data_bss_npg) << PAGESHIFT;
     return (0);
 }
