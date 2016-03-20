@@ -13,6 +13,8 @@
 // process states
 #define NOT_LOADED -1
 #define LOADED 0
+#define TERMINATED 1
+#define EXITED 2
 
 struct frame* free_frames;//global array of all free frames
 int num_frames;
@@ -54,7 +56,9 @@ struct pte* makePageTable();
 struct pte* invalidatePageTable(struct pte *page_table);
 struct pte* initializeInitPageTable(struct pte *page_table);
 int copyKernelStackIntoTable(struct pte *page_table);
+int copyRegion0IntoTable(struct pte *page_table);
 struct pte* initializeUserPageTable(struct pte *page_table);
+int freeProcess(struct pcb *process_pcb);
 
 struct pcb* makePCB(struct pcb *parent, struct pte* page_table);
 

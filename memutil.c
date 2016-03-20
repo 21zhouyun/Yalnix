@@ -68,12 +68,22 @@ struct pte* initializeUserPageTable(struct pte* page_table) {
         page_table[i].uprot = (PROT_NONE);
     }
 
-    //copyKernelStackIntoTable(page_table);
-
     return page_table;
 }
 
+/**
+ * Mark the frame in the given page table as free when a process is 
+ * terminated or exited
+ * @param
+ * @return
+ */
+int freeProcess(struct pcb *process_pcb){
+    //TODO: implement this shit.
+    return 0;
+}
+
 // copy the kernel stack of the current process into the given page table
+// TODO: make sure this is really working. way too important.
 int copyKernelStackIntoTable(struct pte *page_table){
     int i;
     int limit = GET_VPN(KERNEL_STACK_LIMIT);
@@ -98,8 +108,56 @@ int copyKernelStackIntoTable(struct pte *page_table){
     }
 
     for(i = base; i < limit; i++) {
-        kernel_page_table[i].valid = 0;
+        kernel_page_table[i-GET_VPN(VMEM_0_BASE)].valid = 0;
     }
+
+    return 0;
+}
+
+/**
+ * Copy every valid page table to the given page table
+ * @param
+ * @return
+ */
+int copyRegion0IntoTable(struct pte *page_table){
+    int i;
+    struct pte* parent_page_table = current_pcb->page_table;
+
+    for (i = 0; i < PAGE_TABLE_LEN; i++){
+
+        page_table[i].valid = parent_page_table[i].valid;
+        page_table[i].kprot = parent_page_table[i].kprot;
+        page_table[i].uprot = parent_page_table[i].uprot;
+
+        if (parent_page_table[i].valid == 1 && page_table[i].pfn == PFN_INVALID){
+            // allocate a free frame for the given page table if needed
+            page_table[i].pfn = getFreeFrame();
+        }
+        
+        copyPage(i, page_table);
+        
+    }
+
+    return 0;
+}
+
+/**
+ * Copy a page indicated by the given vpn from the current process to the given page table.
+ * @param
+ * @param
+ * @return
+ */
+int copyPage(int vpn, struct pte *page_table){
+    kernel_page_table[vpn - GET_VPN(VMEM_0_BASE)].valid = 1;
+    kernel_page_table[vpn - GET_VPN(VMEM_0_BASE)].pfn = page_table[vpn].pfn;
+    TracePrintf(1, "Mapped PFN %x to VPN %x\n", page_table[vpn].pfn, vpn - GET_VPN(VMEM_0_BASE));
+    //TODO: better protection?
+    kernel_page_table[vpn - GET_VPN(VMEM_0_BASE)].kprot = (PROT_READ|PROT_WRITE);
+    kernel_page_table[vpn - GET_VPN(VMEM_0_BASE)].uprot = (PROT_READ|PROT_WRITE);
+
+    memcpy(PAGE_TABLE_LEN * PAGESIZE + (vpn << PAGESHIFT), vpn << PAGESHIFT, PAGESIZE);
+
+    kernel_page_table[vpn-GET_VPN(VMEM_0_BASE)].valid = 0;
 
     return 0;
 }

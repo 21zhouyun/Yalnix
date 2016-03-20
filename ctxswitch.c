@@ -1,4 +1,6 @@
 #include <stdlib.h>
+#include <assert.h>
+#include <string.h>
 
 #include <comp421/yalnix.h>
 #include <comp421/hardware.h>
@@ -29,4 +31,20 @@ SavedContext *MySwitchFunc(SavedContext *ctxp, void *p1, void *p2)
 		//TODO: make sure this is the one we want to return??
 		return pcb2->context;
 	}
+}
+
+SavedContext *ForkSwitchFunc(SavedContext *ctxp, void *p1, void *p2){
+	struct pcb *parent_pcb = (struct pcb *) p1;
+	struct pcb *child_pcb = (struct pcb *) p2;
+	assert(parent_pcb->pid == current_pcb->pid);
+
+    //copy parent saved context
+    //since both contexts are allocated in region1, we can directly
+    //copy it over using its virtual address.
+    memcpy(child_pcb->context, ctxp, sizeof(SavedContext));
+
+    //copy parent region0 to child, including kernel stack
+    copyRegion0IntoTable(child_pcb->page_table);
+
+    return child_pcb->context;
 }

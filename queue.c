@@ -1,5 +1,6 @@
 #include "queue.h"
 #include <stdlib.h>
+#include <comp421/hardware.h>
 
 queue* makeQueue(int size){
     if (size < DEFAULT_QUEUE_SIZE){

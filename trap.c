@@ -141,10 +141,12 @@ void MemoryHandler(ExceptionStackFrame *frame){
 
     if (!stackGrew) {
         // TODO: see if there's a better way to do this?
+        // TODO: free the physical memory of this thing?
 
         // Terminate the current running process.
         TracePrintf(2, "TRAP_MEMORY: MemoryHandler terminating process pid %d\n", current_pcb->pid);
-
+        current_pcb -> process_state = TERMINATED;
+        
         // Run the next ready process.
         struct pcb* next_pcb = dequeue_ready();
         TracePrintf(1, "Context Switch to pid %d\n", next_pcb->pid);
