@@ -80,18 +80,22 @@ int ForkHandler(void){
     // initialize basic page table and pcb for the child process
     struct pte *child_page_table = makePageTable();
     struct pcb *child_pcb = makePCB(current_pcb, child_page_table);
+    int child_pid = child_pcb->pid;
+
     enqueue(current_pcb->children, child_pcb);
     child_pcb->process_state = LOADED;
-    TracePrintf(1, "initialized child process %x for current process %x",
+    TracePrintf(1, "initialized child process %x for current process %x\n",
                 child_pcb->pid, current_pcb->pid);
 
     ContextSwitch(ForkSwitchFunc, current_pcb->context, current_pcb, child_pcb);
 
     // even after the switch, the kernel stack stays the say, so the pid
     // should be preserved.
-    if (current_pcb->pid == child_pcb->pid){
+    if (current_pcb->pid == child_pid){
+        TracePrintf(1, "Return in child\n");
         return 0;
     } else {
+        TracePrintf(1, "Return in parent\n");
         return child_pcb->pid;
     }
 }

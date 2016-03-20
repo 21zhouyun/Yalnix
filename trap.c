@@ -37,6 +37,8 @@ void KernelCallHandler(ExceptionStackFrame *frame){
     TracePrintf(0, "KernelHandler\n");
     switch(frame->code){
         case YALNIX_FORK:
+            TracePrintf(1, "FORK\n");
+            frame->regs[0] = ForkHandler();
             break;
         case YALNIX_EXEC:
             break;
@@ -60,7 +62,6 @@ void KernelCallHandler(ExceptionStackFrame *frame){
             break;
         case YALNIX_TTY_WRITE:
             break;
-
         default:
             TracePrintf(1, "Unknow kernel call!");
     }
@@ -146,7 +147,7 @@ void MemoryHandler(ExceptionStackFrame *frame){
         // Terminate the current running process.
         TracePrintf(2, "TRAP_MEMORY: MemoryHandler terminating process pid %d\n", current_pcb->pid);
         current_pcb -> process_state = TERMINATED;
-        
+
         // Run the next ready process.
         struct pcb* next_pcb = dequeue_ready();
         TracePrintf(1, "Context Switch to pid %d\n", next_pcb->pid);

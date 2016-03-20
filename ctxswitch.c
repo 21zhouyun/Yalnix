@@ -25,6 +25,9 @@ SavedContext *MySwitchFunc(SavedContext *ctxp, void *p1, void *p2)
 		WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);
 
 		//update currnet pcb
+		if (current_pcb->pid != 0){
+			enqueue_ready(current_pcb);
+		}
 		current_pcb = pcb2;
 		TracePrintf(1, "Switch to page table at %d\n", pcb2->page_table);
 
@@ -38,13 +41,27 @@ SavedContext *ForkSwitchFunc(SavedContext *ctxp, void *p1, void *p2){
 	struct pcb *child_pcb = (struct pcb *) p2;
 	assert(parent_pcb->pid == current_pcb->pid);
 
+	TracePrintf(1, "Copy saved context from parent proces to child process.\n");
     //copy parent saved context
     //since both contexts are allocated in region1, we can directly
     //copy it over using its virtual address.
     memcpy(child_pcb->context, ctxp, sizeof(SavedContext));
 
+	TracePrintf(1, "Copy reigon0 from parent proces to child process.\n");
     //copy parent region0 to child, including kernel stack
     copyRegion0IntoTable(child_pcb->page_table);
+
+    debugPageTable(child_pcb->page_table);
+
+    TracePrintf(1, "Switch to child's page table.\n");
+    //switch to child process
+    WriteRegister(REG_PTR0, (RCS421RegVal) child_pcb->page_table);
+	WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);
+
+	if (current_pcb->pid != 0){
+		enqueue_ready(current_pcb);
+	}
+    current_pcb = child_pcb;
 
     return child_pcb->context;
 }

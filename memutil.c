@@ -43,6 +43,7 @@ struct pte* initializeInitPageTable(struct pte* page_table) {
 
     //validate kernel stack
     for(i = base; i < limit; i++) {
+        TracePrintf(1, "Validate Kernel stack at vpn %x\n", i);
         page_table[i].valid = 1;
         // VM shouldn't be enabled for this.
         page_table[i].pfn = i;
@@ -120,21 +121,22 @@ int copyKernelStackIntoTable(struct pte *page_table){
  * @return
  */
 int copyRegion0IntoTable(struct pte *page_table){
+    //Assume the no pfn is allocated for the given page table
+    //TODO: check this
     int i;
     struct pte* parent_page_table = current_pcb->page_table;
 
     for (i = 0; i < PAGE_TABLE_LEN; i++){
-
         page_table[i].valid = parent_page_table[i].valid;
         page_table[i].kprot = parent_page_table[i].kprot;
         page_table[i].uprot = parent_page_table[i].uprot;
 
-        if (parent_page_table[i].valid == 1 && page_table[i].pfn == PFN_INVALID){
-            // allocate a free frame for the given page table if needed
+        if (parent_page_table[i].valid == 1){
+            // allocate a free frame for the given page table
             page_table[i].pfn = getFreeFrame();
+            TracePrintf(1, "Copy vpn %x into child pfn %x\n", i, page_table[i].pfn);
+            copyPage(i, page_table);
         }
-        
-        copyPage(i, page_table);
         
     }
 
@@ -148,16 +150,19 @@ int copyRegion0IntoTable(struct pte *page_table){
  * @return
  */
 int copyPage(int vpn, struct pte *page_table){
-    kernel_page_table[vpn - GET_VPN(VMEM_0_BASE)].valid = 1;
-    kernel_page_table[vpn - GET_VPN(VMEM_0_BASE)].pfn = page_table[vpn].pfn;
-    TracePrintf(1, "Mapped PFN %x to VPN %x\n", page_table[vpn].pfn, vpn - GET_VPN(VMEM_0_BASE));
+    // use the top entry of kernel page table as a temporary buffer
+    int kernel_temp_vpn = GET_VPN(VMEM_1_LIMIT) - GET_VPN(VMEM_1_BASE) - 1;
+
+    kernel_page_table[kernel_temp_vpn].valid = 1;
+    kernel_page_table[kernel_temp_vpn].pfn = page_table[vpn].pfn;
+    TracePrintf(1, "Mapped PFN %x to VPN %x\n", page_table[vpn].pfn, kernel_temp_vpn);
     //TODO: better protection?
-    kernel_page_table[vpn - GET_VPN(VMEM_0_BASE)].kprot = (PROT_READ|PROT_WRITE);
-    kernel_page_table[vpn - GET_VPN(VMEM_0_BASE)].uprot = (PROT_READ|PROT_WRITE);
+    kernel_page_table[kernel_temp_vpn].kprot = (PROT_READ|PROT_WRITE);
+    kernel_page_table[kernel_temp_vpn].uprot = (PROT_READ|PROT_WRITE);
 
-    memcpy(PAGE_TABLE_LEN * PAGESIZE + (vpn << PAGESHIFT), vpn << PAGESHIFT, PAGESIZE);
+    memcpy(PAGE_TABLE_LEN * PAGESIZE + (kernel_temp_vpn << PAGESHIFT), vpn << PAGESHIFT, PAGESIZE);
 
-    kernel_page_table[vpn-GET_VPN(VMEM_0_BASE)].valid = 0;
+    kernel_page_table[kernel_temp_vpn].valid = 0;
 
     return 0;
 }
@@ -268,4 +273,15 @@ struct pcb* dequeue_waiting(){
 }
 struct pcb* dequeue_delay(){
     return (struct pcb*)(dequeue(delay_q)->value);
+}
+
+
+//debug
+void debugPageTable(struct pte *page_table){
+    int i;
+    for(i = 0; i < PAGE_TABLE_LEN; i++){
+        TracePrintf(1, "[DEBUG]vpn %x: valid %x, kprot %x, uprot %x, pfn %x\n",
+            i, page_table[i].valid, page_table[i].kprot, page_table[i].uprot,
+            page_table[i].pfn);
+    }
 }

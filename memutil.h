@@ -5,7 +5,7 @@
 
 #define GET_VPN(addr) (((long) addr & PAGEMASK) >> PAGESHIFT)
 
-#define PFN_INVALID -1
+#define PFN_INVALID 0
 #define KERNEL_TABLE_OFFSET 512
 
 #define MAX_QUEUE_SIZE 1024
@@ -57,6 +57,7 @@ struct pte* invalidatePageTable(struct pte *page_table);
 struct pte* initializeInitPageTable(struct pte *page_table);
 int copyKernelStackIntoTable(struct pte *page_table);
 int copyRegion0IntoTable(struct pte *page_table);
+int copyPage(int vpn, struct pte *page_table);
 struct pte* initializeUserPageTable(struct pte *page_table);
 int freeProcess(struct pcb *process_pcb);
 
@@ -75,5 +76,8 @@ int enqueue_delay(struct pcb* process_pcb);
 struct pcb* dequeue_ready();
 struct pcb* dequeue_waiting();
 struct pcb* dequeue_delay();
+
+//debug
+void debugPageTable(struct pte *page_table);
 
 
