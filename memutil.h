@@ -70,7 +70,7 @@ struct pte* invalidatePageTable(struct pte *page_table);
 struct pte* initializeInitPageTable(struct pte *page_table);
 int copyKernelStackIntoTable(struct pte *page_table);
 int copyRegion0IntoTable(struct pte *page_table);
-int copyPage(long vpn, struct pte *page_table);
+int copyPage(long vpn, long pfn);
 struct pte* initializeUserPageTable(struct pte *page_table);
 int freeProcess(struct pcb *process_pcb);
 

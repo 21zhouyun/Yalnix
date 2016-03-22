@@ -12,7 +12,7 @@ int PID = 0;
 
 extern const long kernel_temp_vpn = GET_VPN(VMEM_1_LIMIT) - GET_VPN(VMEM_1_BASE) - 1;
 extern const long kernel_temp_vpn2 = GET_VPN(VMEM_1_LIMIT) - GET_VPN(VMEM_1_BASE) - 2;
-extern const long kernel_copy_vpn = GET_VPN(VMEM_1_LIMIT) - GET_VPN(VMEM_1_BASE) - 3;
+extern const long copier = GET_VPN(VMEM_1_LIMIT) - GET_VPN(VMEM_1_BASE) - 3;
 
 struct pte* free_to_take_page_table = NULL;
 
@@ -40,9 +40,14 @@ struct pte* makePageTable(){
     } else {
         long free_frame = getFreeFrame();
         // make the free frame into two page tables
-        new_page_table = (struct pte*)(free_frame << PAGESHIFT);
-        free_to_take_page_table = new_page_table + PAGE_TABLE_SIZE;
-        TracePrintf(1, "Created new page table at %x and %x\n", new_page_table, free_to_take_page_table);
+        long addr1 = DOWN_TO_PAGE(free_frame << PAGESHIFT);
+        long addr2 = addr1 + PAGE_TABLE_SIZE;
+
+        new_page_table = (struct pte*)addr1;
+        free_to_take_page_table = (struct pte*)addr2;
+
+        TracePrintf(1, "Created new page table at %x (%x) and %x (%x)\n", new_page_table, GET_PFN(new_page_table),
+        free_to_take_page_table, GET_PFN(free_to_take_page_table));
     }
 
     struct pte* page_table_ptr = (struct pte*)mapToTemp((void*)new_page_table, kernel_temp_vpn);
@@ -140,7 +145,7 @@ int copyKernelStackIntoTable(struct pte *page_table){
 
     // copy the current process's kernel stack
     for(i = base; i < limit; i++) {
-        copyPage(i, page_table_ptr);
+        copyPage(i, page_table_ptr[i].pfn);
     }
 
     return 0;
@@ -166,7 +171,7 @@ int copyRegion0IntoTable(struct pte *page_table){
             // allocate a free frame for the given page table
             page_table[i].pfn = getFreeFrame();
             TracePrintf(1, "Copy vpn %x into child pfn %x\n", i, page_table[i].pfn);
-            copyPage(i, page_table);
+            copyPage(i, page_table[i].pfn);
         }
         
     }
@@ -175,46 +180,33 @@ int copyRegion0IntoTable(struct pte *page_table){
 }
 
 /**
- * Copy a page indicated by the given vpn from the current process to the given page table.
+ * Copy a page indicated by the given vpn from region0 into the given pfn
  * @param
  * @param
  * @return
  */
-int copyPage(long vpn, struct pte *page_table){
-    unsigned int original_valid = kernel_page_table[kernel_copy_vpn].valid;
-    unsigned int original_pfn = kernel_page_table[kernel_copy_vpn].pfn;
-    unsigned int original_kprot = kernel_page_table[kernel_copy_vpn].kprot;
-    unsigned int original_uprot = kernel_page_table[kernel_copy_vpn].uprot;
+int copyPage(long vpn, long pfn){
+    unsigned int original_valid = kernel_page_table[copier].valid;
+    unsigned int original_pfn = kernel_page_table[copier].pfn;
+    unsigned int original_kprot = kernel_page_table[copier].kprot;
+    unsigned int original_uprot = kernel_page_table[copier].uprot;
 
-    kernel_page_table[kernel_copy_vpn].valid = 1;
-    kernel_page_table[kernel_copy_vpn].pfn = page_table[vpn].pfn;
-    TracePrintf(1, "Mapped PFN %x to VPN %x\n", page_table[vpn].pfn, kernel_copy_vpn);
+    kernel_page_table[copier].valid = 1;
+    kernel_page_table[copier].pfn = pfn;
+    TracePrintf(1, "Mapped PFN %x to VPN %x\n", pfn, copier);
     //TODO: better protection?
-    kernel_page_table[kernel_copy_vpn].kprot = (PROT_READ|PROT_WRITE);
-    kernel_page_table[kernel_copy_vpn].uprot = (PROT_READ|PROT_WRITE);
+    kernel_page_table[copier].kprot = (PROT_READ|PROT_WRITE);
+    kernel_page_table[copier].uprot = (PROT_READ|PROT_WRITE);
 
-    memcpy((void*)(VMEM_1_BASE + (kernel_copy_vpn << PAGESHIFT)), (void*)(vpn << PAGESHIFT), PAGESIZE);
+    WriteRegister(REG_TLB_FLUSH, VMEM_1_BASE + DOWN_TO_PAGE(copier << PAGESHIFT));
 
-    // debug info
-    // TracePrintf(1, "DEBUG COPY PAGE\n");
-    // long offset;
-    // for (offset = 0; offset < PAGESIZE; offset++){
-    //     void* from_addr = (void*)((vpn << PAGESHIFT) + offset);
-    //     void* to_addr = (void*)(VMEM_1_BASE + (kernel_copy_vpn << PAGESHIFT) + offset);
-
-    //     int from_value = *(int*)from_addr;
-    //     int to_value = *(int*)to_addr;
-    //     //check each byte
-    //     if (from_value != to_value){
-    //         TracePrintf(1, "[ERROR] value mismatch %d (%x) %d (%x)[%x]\n", from_value, from_addr, to_value, to_addr, page_table + (vpn << PAGESHIFT) + offset);
-    //     }
-    // }
+    memcpy((void*)(VMEM_1_BASE + DOWN_TO_PAGE(copier << PAGESHIFT)), (void*)(VMEM_0_BASE + (vpn << PAGESHIFT)), PAGESIZE);
 
     // restore
-    kernel_page_table[kernel_copy_vpn].valid = original_valid;
-    kernel_page_table[kernel_copy_vpn].pfn = original_pfn;
-    kernel_page_table[kernel_copy_vpn].kprot = original_kprot;
-    kernel_page_table[kernel_copy_vpn].uprot = original_uprot;
+    kernel_page_table[copier].valid = original_valid;
+    kernel_page_table[copier].pfn = original_pfn;
+    kernel_page_table[copier].kprot = original_kprot;
+    kernel_page_table[copier].uprot = original_uprot;
 
     return 0;
 }
