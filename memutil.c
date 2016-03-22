@@ -29,8 +29,9 @@ struct pte* makeKernelPageTable(){
 }
 
 /**
-* make a new invalidated page table
-*/
+ * Take a free physical frame and make two page table out of it.
+ * @return the physical address of the page table.
+ */
 struct pte* makePageTable(){
     // new_page_table points to the physical adderss of a page table.
     // DO NOT USE IT DIRECTLY. Map it to Region 1's virtual page 511,
@@ -59,8 +60,9 @@ struct pte* makePageTable(){
 }
 
 /**
- * Invalidate a page table.
- * Assume the given pointer is in physical address
+ * Invalidate a given page table
+ * @param physical address of the page table
+ * @return the same physical address of the invalidated page table
  */
 struct pte* invalidatePageTable(struct pte* page_table){
     TracePrintf(1, "invalidate page table starting at %x\n", page_table);
@@ -77,8 +79,9 @@ struct pte* invalidatePageTable(struct pte* page_table){
 }
 
 /**
- * Initialize a page table for Init process
- * Assume the given pointer is in PHYSICAL address
+ * initialize a page table for init process
+ * @param the physical address of the page table
+ * @return the same physical address of the page table
  */
 struct pte* initializeInitPageTable(struct pte* page_table) {
     long i;
@@ -99,8 +102,9 @@ struct pte* initializeInitPageTable(struct pte* page_table) {
 }
 
 /**
- * Copy the current process' kernel stack to the given page table
- * Assume the given pointer is in PHYSICAL address
+ * initialize a page table for a user process
+ * @param the physical address of the page table
+ * @return the same physical address of the page table
  */
 struct pte* initializeUserPageTable(struct pte* page_table) {
     long i;
@@ -138,6 +142,7 @@ int freeProcess(struct pcb *process_pcb){
  * Since this function is only used to copy the current process' page table
  * which is mapped at kernel_temp_vpn. We also need to map the physical page
  * table of the new process to some place in order to write into it.
+ * @param the physical address of the page table to be filled
  */
 int copyKernelStackIntoTable(struct pte *page_table){
     long i;
@@ -160,13 +165,10 @@ int copyKernelStackIntoTable(struct pte *page_table){
 
 /**
  * Copy every valid page table to the given page table
- * Assume the given page_table is PHYSICAL address.
- * @param
+ * @param the physical address of the given page table
  * @return
  */
 int copyRegion0IntoTable(struct pte *page_table){
-    //Assume the no pfn is allocated for the given page table
-    //TODO: check this
     long i;
     struct pte* parent_page_table = current_pcb->page_table;
 
@@ -191,8 +193,8 @@ int copyRegion0IntoTable(struct pte *page_table){
 
 /**
  * Copy a page indicated by the given vpn from region0 into the given pfn
- * @param
- * @param
+ * @param the vpn for the source page from region0
+ * @param the pfn for the destination page
  * @return
  */
 int copyPage(long vpn, long pfn){
@@ -225,7 +227,8 @@ int copyPage(long vpn, long pfn){
  * initialize a new pcb.
  * Assume the page_table, if not NULL, is already initialize
  * in the correct way.
- * Assume page_table is the physical address
+ * @param the parent pcb
+ * @param the physical address of the page table for the current process
  */
 struct pcb* makePCB(struct pcb* parent, struct pte* page_table){
     struct pcb* pcb_ptr;
@@ -248,6 +251,7 @@ struct pcb* makePCB(struct pcb* parent, struct pte* page_table){
 
 /**
  * Initialize a list of frames
+ * @param the number of free frames
  */
 int initializeFrames(int num_of_free_frames){
     free_frames = (struct frame*)malloc(sizeof(struct frame) * num_of_free_frames);
@@ -264,6 +268,8 @@ int initializeFrames(int num_of_free_frames){
 
 /**
  * Set the free state of the frame
+ * @param the index of the frame
+ * @param the state of the frame
  */
 int setFrame(int index, bool state){
     free_frames[index].free = state;
@@ -293,7 +299,8 @@ long getFreeFrame(){
 /**
  * Map the given pfn in physical address to the highest virtual page in Region1.
  * return the virtual address of the given physical address
- * @param
+ * @param physical address
+ * @param vpn of the temporary pte
  */
 void* mapToTemp(void* addr, long temp_vpn){
     long pfn = GET_PFN(addr);
