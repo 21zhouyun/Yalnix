@@ -182,7 +182,6 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb, ExceptionStackFram
         if (i < base && user_table[i].valid == 1){
             user_table[i].valid = 0;
             setFrame(i, true);
-            TracePrintf(1, "Invalidate vpn %d\n", i);
         }
     }
     TracePrintf(1, "Reset user page table\n");
@@ -200,7 +199,6 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb, ExceptionStackFram
     int k;
     for (i = 0; i < MEM_INVALID_PAGES; i++){
         user_table[i].valid = 0;
-        TracePrintf(1, "Invalidate vpn %d\n", i);
     }
 
     /* First, the text pages */

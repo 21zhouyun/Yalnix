@@ -14,22 +14,24 @@ SavedContext *MySwitchFunc(SavedContext *ctxp, void *p1, void *p2)
 		// kernel stack, without necessarily switching to a new process.
 
 		// p1 is pcb for a new process, copy the kernel stack here.
-		copyKernelStackIntoTable(((struct pcb *) p1)->page_table);
+		copyKernelStackIntoTable(((struct pcb *) p1)->physical_page_table);
 		return ctxp;
 	} else {
 		// Doing context switch
 		struct pcb *pcb1 = (struct pcb *) p1;
 		struct pcb *pcb2 = (struct pcb *) p2;
 
-		WriteRegister(REG_PTR0, (RCS421RegVal) pcb2->page_table);
+		WriteRegister(REG_PTR0, (RCS421RegVal) pcb2->physical_page_table);
 		WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);
+
+        pcb2->page_table = mapToTemp((void*)pcb2->physical_page_table, kernel_temp_vpn);
 
 		//update currnet pcb
 		if (current_pcb->pid != 0){
 			enqueue_ready(current_pcb);
 		}
 		current_pcb = pcb2;
-		TracePrintf(1, "Switch to page table at %d\n", pcb2->page_table);
+		TracePrintf(1, "Switch to page table at %x (%x)\n", pcb2->physical_page_table, pcb2->page_table);
 
 		//TODO: make sure this is the one we want to return??
 		return pcb2->context;
@@ -55,7 +57,8 @@ SavedContext *ForkSwitchFunc(SavedContext *ctxp, void *p1, void *p2){
 
     TracePrintf(1, "Switch to child's page table.\n");
     //switch to child process
-    WriteRegister(REG_PTR0, (RCS421RegVal) child_pcb->page_table);
+    mapToTemp((void*)child_pcb->physical_page_table, kernel_temp_vpn);
+    WriteRegister(REG_PTR0, (RCS421RegVal) child_pcb->physical_page_table);
 	WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);
 
 	if (current_pcb->pid != 0){

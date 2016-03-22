@@ -19,10 +19,11 @@ int DelayHandler(int clock_ticks, ExceptionStackFrame *frame){
     TracePrintf(1, "Context Switch to pid %d\n", next_pcb->pid);
     TracePrintf(1, "Current context %d\n", current_pcb->context);
 
-    if (next_pcb->pid == 0 && next_pcb->process_state == NOT_LOADED){    
-        // init a SavedContext for idle
-        ContextSwitch(MySwitchFunc, next_pcb->context, next_pcb, NULL);
-    }
+    // if (next_pcb->pid == 0 && next_pcb->process_state == NOT_LOADED){    
+    //     // init a SavedContext for idle
+    //     ContextSwitch(MySwitchFunc, next_pcb->context, next_pcb, NULL);
+    //     TracePrintf(1, "Initialized idle context first time.\n");
+    // }
 
     ContextSwitch(MySwitchFunc, current_pcb->context, current_pcb, next_pcb);
 

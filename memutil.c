@@ -10,20 +10,53 @@
 /* Globals */
 int PID = 0;
 
+extern const long kernel_temp_vpn = GET_VPN(VMEM_1_LIMIT) - GET_VPN(VMEM_1_BASE) - 1;
+extern const long kernel_temp_vpn2 = GET_VPN(VMEM_1_LIMIT) - GET_VPN(VMEM_1_BASE) - 2;
+extern const long kernel_copy_vpn = GET_VPN(VMEM_1_LIMIT) - GET_VPN(VMEM_1_BASE) - 3;
+
+struct pte* free_to_take_page_table = NULL;
+
+struct pte* makeKernelPageTable(){
+
+    kernel_page_table = (struct pte*)malloc(sizeof(struct pte) * PAGE_TABLE_LEN);
+
+    invalidatePageTable(kernel_page_table);
+
+    return kernel_page_table;
+}
+
 /**
 * make a new invalidated page table
 */
 struct pte* makePageTable(){
-    struct pte* new_page_table = (struct pte*)malloc(sizeof(struct pte) * PAGE_TABLE_LEN);
-    new_page_table = invalidatePageTable(new_page_table);
+    // new_page_table points to the physical adderss of a page table.
+    // DO NOT USE IT DIRECTLY. Map it to Region 1's virtual page 511,
+    // and then use that instead.
+    struct pte* new_page_table;
+
+    if (free_to_take_page_table != NULL){
+        new_page_table = free_to_take_page_table;
+        free_to_take_page_table = NULL;
+    } else {
+        long free_frame = getFreeFrame();
+        // make the free frame into two page tables
+        new_page_table = (struct pte*)(free_frame << PAGESHIFT);
+        free_to_take_page_table = new_page_table + PAGE_TABLE_SIZE;
+        TracePrintf(1, "Created new page table at %x and %x\n", new_page_table, free_to_take_page_table);
+    }
+
+    struct pte* page_table_ptr = (struct pte*)mapToTemp((void*)new_page_table, kernel_temp_vpn);
+    invalidatePageTable(page_table_ptr);
+
     return new_page_table;
 }
 
 /**
- * Invalidate a page table
+ * Invalidate a page table.
+ * Assume the given pointer is in virtual address
  */
 struct pte* invalidatePageTable(struct pte* page_table){
-    int i;
+    long i;
     for (i = 0; i < PAGE_TABLE_LEN; i++) {
         page_table[i].valid = 0;
         page_table[i].kprot = PROT_NONE;
@@ -35,11 +68,12 @@ struct pte* invalidatePageTable(struct pte* page_table){
 
 /**
  * Initialize a page table for Init process
+ * Assume the given pointer is in PHYSICAL address
  */
 struct pte* initializeInitPageTable(struct pte* page_table) {
-    int i;
-    int limit = GET_VPN(KERNEL_STACK_LIMIT);
-    int base = GET_VPN(KERNEL_STACK_BASE);
+    long i;
+    long limit = GET_VPN(KERNEL_STACK_LIMIT);
+    long base = GET_VPN(KERNEL_STACK_BASE);
 
     //validate kernel stack
     for(i = base; i < limit; i++) {
@@ -56,11 +90,12 @@ struct pte* initializeInitPageTable(struct pte* page_table) {
 
 /**
  * Copy the current process' kernel stack to the given page table
+ * Assume the given pointer is in virtual address
  */
 struct pte* initializeUserPageTable(struct pte* page_table) {
-    int i;
-    int limit = GET_VPN(KERNEL_STACK_LIMIT);
-    int base = GET_VPN(KERNEL_STACK_BASE);
+    long i;
+    long limit = GET_VPN(KERNEL_STACK_LIMIT);
+    long base = GET_VPN(KERNEL_STACK_BASE);
 
     for(i = base; i < limit; i++) {
         page_table[i].valid = 1;
@@ -83,33 +118,29 @@ int freeProcess(struct pcb *process_pcb){
     return 0;
 }
 
-// copy the kernel stack of the current process into the given page table
-// TODO: make sure this is really working. way too important.
+/**
+ * Copy the kernel stack of the current process into the given page table.
+ * Assume the given page_table is PHYSICAL address.
+ * 
+ * Rationale:
+ * Since this function is only used to copy the current process' page table
+ * which is mapped at kernel_temp_vpn. We also need to map the physical page
+ * table of the new process to some place in order to write into it.
+ */
 int copyKernelStackIntoTable(struct pte *page_table){
-    int i;
-    int limit = GET_VPN(KERNEL_STACK_LIMIT);
-    int base = GET_VPN(KERNEL_STACK_BASE);
+    long i;
+    long limit = GET_VPN(KERNEL_STACK_LIMIT);
+    long base = GET_VPN(KERNEL_STACK_BASE);
 
-    TracePrintf(1, "Copy current process stack\n");
+    struct pte *page_table_ptr = mapToTemp((void*)page_table, kernel_temp_vpn2);
 
-    for(i = base; i < limit ; i++) {
-        //HACK: map the pfn to the top of Region 1
-        kernel_page_table[i - GET_VPN(VMEM_0_BASE)].valid = 1;
-        kernel_page_table[i - GET_VPN(VMEM_0_BASE)].pfn = page_table[i].pfn;
-        TracePrintf(1, "Mapped PFN %x to VPN %x\n", page_table[i].pfn, i - GET_VPN(VMEM_0_BASE));
-        //TODO: better protection?
-        kernel_page_table[i - GET_VPN(VMEM_0_BASE)].kprot = (PROT_READ|PROT_WRITE);
-        kernel_page_table[i - GET_VPN(VMEM_0_BASE)].uprot = (PROT_READ|PROT_WRITE);
-    }
+    TracePrintf(1, "Copy current process stack from %x (%x) to %x (%x)\n", 
+        current_pcb->physical_page_table, current_pcb->page_table,
+        page_table, page_table_ptr);
 
     // copy the current process's kernel stack
     for(i = base; i < limit; i++) {
-        TracePrintf(1, "Memcpy from %x to %x\n", i << PAGESHIFT, PAGE_TABLE_LEN * PAGESIZE + (i << PAGESHIFT));
-        memcpy(PAGE_TABLE_LEN * PAGESIZE + (i << PAGESHIFT), i << PAGESHIFT, PAGESIZE);
-    }
-
-    for(i = base; i < limit; i++) {
-        kernel_page_table[i-GET_VPN(VMEM_0_BASE)].valid = 0;
+        copyPage(i, page_table_ptr);
     }
 
     return 0;
@@ -123,7 +154,7 @@ int copyKernelStackIntoTable(struct pte *page_table){
 int copyRegion0IntoTable(struct pte *page_table){
     //Assume the no pfn is allocated for the given page table
     //TODO: check this
-    int i;
+    long i;
     struct pte* parent_page_table = current_pcb->page_table;
 
     for (i = 0; i < PAGE_TABLE_LEN; i++){
@@ -149,20 +180,41 @@ int copyRegion0IntoTable(struct pte *page_table){
  * @param
  * @return
  */
-int copyPage(int vpn, struct pte *page_table){
-    // use the top entry of kernel page table as a temporary buffer
-    int kernel_temp_vpn = GET_VPN(VMEM_1_LIMIT) - GET_VPN(VMEM_1_BASE) - 1;
+int copyPage(long vpn, struct pte *page_table){
+    unsigned int original_valid = kernel_page_table[kernel_copy_vpn].valid;
+    unsigned int original_pfn = kernel_page_table[kernel_copy_vpn].pfn;
+    unsigned int original_kprot = kernel_page_table[kernel_copy_vpn].kprot;
+    unsigned int original_uprot = kernel_page_table[kernel_copy_vpn].uprot;
 
-    kernel_page_table[kernel_temp_vpn].valid = 1;
-    kernel_page_table[kernel_temp_vpn].pfn = page_table[vpn].pfn;
-    TracePrintf(1, "Mapped PFN %x to VPN %x\n", page_table[vpn].pfn, kernel_temp_vpn);
+    kernel_page_table[kernel_copy_vpn].valid = 1;
+    kernel_page_table[kernel_copy_vpn].pfn = page_table[vpn].pfn;
+    TracePrintf(1, "Mapped PFN %x to VPN %x\n", page_table[vpn].pfn, kernel_copy_vpn);
     //TODO: better protection?
-    kernel_page_table[kernel_temp_vpn].kprot = (PROT_READ|PROT_WRITE);
-    kernel_page_table[kernel_temp_vpn].uprot = (PROT_READ|PROT_WRITE);
+    kernel_page_table[kernel_copy_vpn].kprot = (PROT_READ|PROT_WRITE);
+    kernel_page_table[kernel_copy_vpn].uprot = (PROT_READ|PROT_WRITE);
 
-    memcpy(PAGE_TABLE_LEN * PAGESIZE + (kernel_temp_vpn << PAGESHIFT), vpn << PAGESHIFT, PAGESIZE);
+    memcpy((void*)(VMEM_1_BASE + (kernel_copy_vpn << PAGESHIFT)), (void*)(vpn << PAGESHIFT), PAGESIZE);
 
-    kernel_page_table[kernel_temp_vpn].valid = 0;
+    // debug info
+    // TracePrintf(1, "DEBUG COPY PAGE\n");
+    // long offset;
+    // for (offset = 0; offset < PAGESIZE; offset++){
+    //     void* from_addr = (void*)((vpn << PAGESHIFT) + offset);
+    //     void* to_addr = (void*)(VMEM_1_BASE + (kernel_copy_vpn << PAGESHIFT) + offset);
+
+    //     int from_value = *(int*)from_addr;
+    //     int to_value = *(int*)to_addr;
+    //     //check each byte
+    //     if (from_value != to_value){
+    //         TracePrintf(1, "[ERROR] value mismatch %d (%x) %d (%x)[%x]\n", from_value, from_addr, to_value, to_addr, page_table + (vpn << PAGESHIFT) + offset);
+    //     }
+    // }
+
+    // restore
+    kernel_page_table[kernel_copy_vpn].valid = original_valid;
+    kernel_page_table[kernel_copy_vpn].pfn = original_pfn;
+    kernel_page_table[kernel_copy_vpn].kprot = original_kprot;
+    kernel_page_table[kernel_copy_vpn].uprot = original_uprot;
 
     return 0;
 }
@@ -171,17 +223,12 @@ int copyPage(int vpn, struct pte *page_table){
  * initialize a new pcb.
  * Assume the page_table, if not NULL, is already initialize
  * in the correct way.
+ * Assume page_table is the physical address
  */
 struct pcb* makePCB(struct pcb* parent, struct pte* page_table){
     struct pcb* pcb_ptr;
+    struct pte* page_table_ptr = (struct pte*)mapToTemp((void*)page_table, kernel_temp_vpn);
 
-    // THIS IS PROBABLY WRONG!
-    // if (page_table == NULL){
-    //     page_table = makePageTable();
-    //     page_table = initializeUserPageTable(page_table);
-    // }
-
-    // Initiate pcb
     pcb_ptr = (struct pcb *)malloc(sizeof(struct pcb));
 
     pcb_ptr->pid = PID++;
@@ -191,7 +238,8 @@ struct pcb* makePCB(struct pcb* parent, struct pte* page_table){
     pcb_ptr->parent = parent;
     pcb_ptr->children = makeQueue(MAX_NUM_CHILDREN);
     pcb_ptr->user_stack_limit = USER_STACK_LIMIT;
-    pcb_ptr->page_table = page_table;
+    pcb_ptr->physical_page_table = page_table;
+    pcb_ptr->page_table = page_table_ptr;
 
     return pcb_ptr;
 }
@@ -227,10 +275,10 @@ int setFrame(int index, bool state){
 
 /**
  * Greedily get the first free frame
- * TODO: change this back to i=0
+ * TODO: add back invalid pages after VM is enabled
  */
-int getFreeFrame(){
-    int i;
+long getFreeFrame(){
+    long i;
     for (i = MEM_INVALID_PAGES; i < num_frames; i++){
         if (free_frames[i].free == true){
             setFrame(i, false);
@@ -238,6 +286,25 @@ int getFreeFrame(){
         }
     }
     return -1;
+}
+
+/**
+ * Map the given pfn in physical address to the highest virtual page in Region1.
+ * return the virtual address of the given physical address
+ * @param
+ */
+void* mapToTemp(void* addr, long temp_vpn){
+    long pfn = GET_PFN(addr);
+    long offset = GET_OFFSET(addr);
+
+    kernel_page_table[temp_vpn].valid = 1;
+    kernel_page_table[temp_vpn].pfn = pfn;
+    TracePrintf(1, "Mapped PFN %x to VPN %x temporarily\n", pfn, temp_vpn);
+    //TODO: better protection?
+    kernel_page_table[temp_vpn].kprot = (PROT_READ|PROT_WRITE);
+    kernel_page_table[temp_vpn].uprot = (PROT_READ|PROT_WRITE);
+
+    return (void*)((VMEM_1_BASE + (temp_vpn << PAGESHIFT)) + offset);
 }
 
 int initializeQueues(){

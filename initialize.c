@@ -74,28 +74,34 @@ void KernelStart(ExceptionStackFrame *frame,
     // initialize page table
     InitPageTable();
 
+    // VM enabled
+
+    initializeQueues();
+
     // initialize pcb
     idle_pcb = makePCB(NULL, idle_page_table);
     init_pcb = makePCB(NULL, init_page_table);
 
-    // don't use idle
+    TracePrintf(1, "[DEBUG]init %x (%x)\n", init_pcb->page_table, init_pcb->physical_page_table);
+     TracePrintf(1, "[DEBUG]idle %x (%x)\n", idle_pcb->page_table, idle_pcb->physical_page_table);
+    // Since init's pcb is initialize after idle's, the current
+    // temporary
     init_pcb = MakeProcess("init", frame, cmd_args, init_pcb);
-
     current_pcb = init_pcb;
 
-    initializeQueues();
+    // init a SavedContext for idle
+    ContextSwitch(MySwitchFunc, idle_pcb->context, idle_pcb, NULL);
+    // idle_pcb = MakeProcess("idle", frame, cmd_args, idle_pcb);
+
 }
 
 
 
 int InitPageTable(){
     int i;
-    kernel_page_table = makePageTable();
-    init_page_table = makePageTable();
-    idle_page_table = makePageTable();
-    init_page_table = initializeInitPageTable(init_page_table);
-    idle_page_table = initializeUserPageTable(idle_page_table);
-
+    // These are physical addresses
+    kernel_page_table = makeKernelPageTable();
+    TracePrintf(1, "Made kernel page table.\n");
 
     int kernel_heap_limit = GET_VPN(kernel_brk);
     int kernel_text_limit = GET_VPN(&_etext);
@@ -119,6 +125,16 @@ int InitPageTable(){
         setFrame(i, false);
     }
 
+    init_page_table = makePageTable();
+    idle_page_table = makePageTable();
+
+    TracePrintf(1, "Made page tables\n");
+
+    init_page_table = initializeInitPageTable(init_page_table);
+    idle_page_table = initializeUserPageTable(idle_page_table);
+
+    TracePrintf(1, "Made init page table at %x\n", init_page_table);
+
     WriteRegister( REG_PTR0, (RCS421RegVal) init_page_table);
     WriteRegister( REG_PTR1, (RCS421RegVal) kernel_page_table);
 
@@ -132,7 +148,12 @@ int InitPageTable(){
 struct pcb* MakeProcess(char* name, ExceptionStackFrame *frame, char **cmd_args, struct pcb* process_pcb){
     //Before loading the program, switch in its page table.
     //WARNING, This is a hack that only works for idle and init initialization!!!
-    WriteRegister(REG_PTR0, (RCS421RegVal) process_pcb->page_table);
+    process_pcb->page_table = mapToTemp((void*)process_pcb->physical_page_table, kernel_temp_vpn);
+    TracePrintf(1, "%x\n", process_pcb->physical_page_table);
+
+    WriteRegister(REG_PTR0, (RCS421RegVal) (process_pcb->physical_page_table));
+    TracePrintf(1, "Flush!\n");
+    // WriteRegister(REG_TLB_FLUSH, (RCS421RegVal) TLB_FLUSH_ALL);
 
     TracePrintf(1, "Finished creating PCB for pid %d, psr: %d\n", process_pcb->pid, process_pcb->psr);
 
@@ -155,7 +176,10 @@ struct pcb* MakeProcess(char* name, ExceptionStackFrame *frame, char **cmd_args,
 struct pcb* MakeIdle(ExceptionStackFrame *frame, struct pcb* process_pcb){
     //Before loading the program, switch in its page table.
     //WARNING, This is a hack that only works for idle and init initialization!!!
-    WriteRegister(REG_PTR0, (RCS421RegVal) process_pcb->page_table);
+    mapToTemp((void*)process_pcb->physical_page_table, kernel_temp_vpn);
+    WriteRegister(REG_PTR0, (RCS421RegVal) process_pcb->physical_page_table);
+    TracePrintf(1, "Flush!\n");
+    WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);
 
     TracePrintf(1, "Finished creating PCB for pid %d, psr: %d\n", process_pcb->pid, process_pcb->psr);
 

@@ -2,8 +2,12 @@
 #include <comp421/yalnix.h>
 #include "queue.h"
 #include <stdbool.h>
+#include <stdlib.h>
 
-#define GET_VPN(addr) (((long) addr & PAGEMASK) >> PAGESHIFT)
+// These are the same thing. Keep both for legacy reason...
+#define GET_VPN(addr) (((long)addr & PAGEMASK) >> PAGESHIFT)
+#define GET_PFN(addr) (((long)addr & PAGEMASK) >> PAGESHIFT)
+#define GET_OFFSET(addr) ((long)addr & PAGEOFFSET)
 
 #define PFN_INVALID 0
 #define KERNEL_TABLE_OFFSET 512
@@ -19,6 +23,13 @@
 struct frame* free_frames;//global array of all free frames
 int num_frames;
 int num_free_frames;
+
+// The highest vpn in region1. Used as a temporary pte for user page tables.
+const long kernel_temp_vpn;
+const long kernel_temp_vpn2;
+
+// Second highest vpn in region1. Used as a temporary pte for copying purpose.
+const long kernel_copy_vpn;
 
 // page tables
 struct pte* kernel_page_table;
@@ -44,7 +55,8 @@ struct pcb{
     unsigned long psr;
     void *user_stack_limit;
     void *current_brk;
-    struct pte* page_table; // address space of this process
+    struct pte* physical_page_table; // physical address to the page table (never change)
+    struct pte* page_table; // virtual address to the page table
 } pcb;
 
 struct frame{
@@ -52,12 +64,13 @@ struct frame{
 };
 
 // manage page tables
+struct pte* makeKernelPageTable();
 struct pte* makePageTable();
 struct pte* invalidatePageTable(struct pte *page_table);
 struct pte* initializeInitPageTable(struct pte *page_table);
 int copyKernelStackIntoTable(struct pte *page_table);
 int copyRegion0IntoTable(struct pte *page_table);
-int copyPage(int vpn, struct pte *page_table);
+int copyPage(long vpn, struct pte *page_table);
 struct pte* initializeUserPageTable(struct pte *page_table);
 int freeProcess(struct pcb *process_pcb);
 
@@ -66,7 +79,8 @@ struct pcb* makePCB(struct pcb *parent, struct pte* page_table);
 // manage frames
 int initializeFrames(int num_free_frames);
 int setFrame(int index, bool state);
-int getFreeFrame();
+long getFreeFrame();
+void* mapToTemp(void* addr, long temp_vpn);
 
 // manage process queues
 int initializeQueues();
