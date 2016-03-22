@@ -21,10 +21,9 @@ SavedContext *MySwitchFunc(SavedContext *ctxp, void *p1, void *p2)
 		struct pcb *pcb1 = (struct pcb *) p1;
 		struct pcb *pcb2 = (struct pcb *) p2;
 
+        pcb2->page_table = mapToTemp((void*)pcb2->physical_page_table, kernel_temp_vpn);
 		WriteRegister(REG_PTR0, (RCS421RegVal) pcb2->physical_page_table);
 		WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);
-
-        pcb2->page_table = mapToTemp((void*)pcb2->physical_page_table, kernel_temp_vpn);
 
 		//update currnet pcb
 		if (current_pcb->pid != 0){
@@ -51,9 +50,9 @@ SavedContext *ForkSwitchFunc(SavedContext *ctxp, void *p1, void *p2){
 
 	TracePrintf(1, "Copy reigon0 from parent proces to child process.\n");
     //copy parent region0 to child, including kernel stack
-    copyRegion0IntoTable(child_pcb->page_table);
+    copyRegion0IntoTable(child_pcb->physical_page_table);
 
-    debugPageTable(child_pcb->page_table);
+    // debugPageTable(child_pcb->page_table);
 
     TracePrintf(1, "Switch to child's page table.\n");
     //switch to child process

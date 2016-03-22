@@ -2,6 +2,7 @@
 #include <comp421/yalnix.h>
 #include "memutil.h"
 #include "queue.h"
+#include "initialize.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -10,7 +11,9 @@
 /* Globals */
 int PID = 0;
 
+// this maps the current process' page table to its physical location
 extern const long kernel_temp_vpn = GET_VPN(VMEM_1_LIMIT) - GET_VPN(VMEM_1_BASE) - 1;
+// use this for any temporary change, no need to change it back
 extern const long kernel_temp_vpn2 = GET_VPN(VMEM_1_LIMIT) - GET_VPN(VMEM_1_BASE) - 2;
 extern const long copier = GET_VPN(VMEM_1_LIMIT) - GET_VPN(VMEM_1_BASE) - 3;
 
@@ -50,23 +53,25 @@ struct pte* makePageTable(){
         free_to_take_page_table, GET_PFN(free_to_take_page_table));
     }
 
-    struct pte* page_table_ptr = (struct pte*)mapToTemp((void*)new_page_table, kernel_temp_vpn);
-    invalidatePageTable(page_table_ptr);
+    invalidatePageTable(new_page_table);
 
     return new_page_table;
 }
 
 /**
  * Invalidate a page table.
- * Assume the given pointer is in virtual address
+ * Assume the given pointer is in physical address
  */
 struct pte* invalidatePageTable(struct pte* page_table){
+    TracePrintf(1, "invalidate page table starting at %x\n", page_table);
     long i;
+    struct pte* page_table_ptr = (struct pte*)mapToTemp((void*)page_table, kernel_temp_vpn2);
+    
     for (i = 0; i < PAGE_TABLE_LEN; i++) {
-        page_table[i].valid = 0;
-        page_table[i].kprot = PROT_NONE;
-        page_table[i].uprot = PROT_NONE;
-        page_table[i].pfn = PFN_INVALID;
+        page_table_ptr[i].valid = 0;
+        page_table_ptr[i].kprot = PROT_NONE;
+        page_table_ptr[i].uprot = PROT_NONE;
+        page_table_ptr[i].pfn = PFN_INVALID;
     }
     return page_table;
 }
@@ -95,18 +100,20 @@ struct pte* initializeInitPageTable(struct pte* page_table) {
 
 /**
  * Copy the current process' kernel stack to the given page table
- * Assume the given pointer is in virtual address
+ * Assume the given pointer is in PHYSICAL address
  */
 struct pte* initializeUserPageTable(struct pte* page_table) {
     long i;
     long limit = GET_VPN(KERNEL_STACK_LIMIT);
     long base = GET_VPN(KERNEL_STACK_BASE);
 
+    struct pte* page_table_ptr = (struct pte*)mapToTemp((void*)page_table, kernel_temp_vpn2);
+
     for(i = base; i < limit; i++) {
-        page_table[i].valid = 1;
-        page_table[i].pfn = getFreeFrame();
-        page_table[i].kprot = (PROT_READ|PROT_WRITE);
-        page_table[i].uprot = (PROT_NONE);
+        page_table_ptr[i].valid = 1;
+        page_table_ptr[i].pfn = getFreeFrame();
+        page_table_ptr[i].kprot = (PROT_READ|PROT_WRITE);
+        page_table_ptr[i].uprot = (PROT_NONE);
     }
 
     return page_table;
@@ -153,6 +160,7 @@ int copyKernelStackIntoTable(struct pte *page_table){
 
 /**
  * Copy every valid page table to the given page table
+ * Assume the given page_table is PHYSICAL address.
  * @param
  * @return
  */
@@ -162,16 +170,18 @@ int copyRegion0IntoTable(struct pte *page_table){
     long i;
     struct pte* parent_page_table = current_pcb->page_table;
 
+    struct pte *page_table_ptr = mapToTemp((void*)page_table, kernel_temp_vpn2);
+
     for (i = 0; i < PAGE_TABLE_LEN; i++){
-        page_table[i].valid = parent_page_table[i].valid;
-        page_table[i].kprot = parent_page_table[i].kprot;
-        page_table[i].uprot = parent_page_table[i].uprot;
+        page_table_ptr[i].valid = parent_page_table[i].valid;
+        page_table_ptr[i].kprot = parent_page_table[i].kprot;
+        page_table_ptr[i].uprot = parent_page_table[i].uprot;
 
         if (parent_page_table[i].valid == 1){
             // allocate a free frame for the given page table
-            page_table[i].pfn = getFreeFrame();
-            TracePrintf(1, "Copy vpn %x into child pfn %x\n", i, page_table[i].pfn);
-            copyPage(i, page_table[i].pfn);
+            page_table_ptr[i].pfn = getFreeFrame();
+            TracePrintf(1, "Copy vpn %x into child pfn %x\n", i, page_table_ptr[i].pfn);
+            copyPage(i, page_table_ptr[i].pfn);
         }
         
     }
@@ -219,7 +229,7 @@ int copyPage(long vpn, long pfn){
  */
 struct pcb* makePCB(struct pcb* parent, struct pte* page_table){
     struct pcb* pcb_ptr;
-    struct pte* page_table_ptr = (struct pte*)mapToTemp((void*)page_table, kernel_temp_vpn);
+    struct pte* page_table_ptr = (struct pte*)mapToTemp((void*)page_table, kernel_temp_vpn2);
 
     pcb_ptr = (struct pcb *)malloc(sizeof(struct pcb));
 
@@ -295,6 +305,11 @@ void* mapToTemp(void* addr, long temp_vpn){
     //TODO: better protection?
     kernel_page_table[temp_vpn].kprot = (PROT_READ|PROT_WRITE);
     kernel_page_table[temp_vpn].uprot = (PROT_READ|PROT_WRITE);
+
+    if (vm_enable == true){
+        TracePrintf(1, "FLUSH!\n");
+        WriteRegister(REG_TLB_FLUSH, (void*)(VMEM_1_BASE + (temp_vpn << PAGESHIFT)));
+    }
 
     return (void*)((VMEM_1_BASE + (temp_vpn << PAGESHIFT)) + offset);
 }

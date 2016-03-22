@@ -11,7 +11,7 @@
 #include "ctxswitch.h"
 
 // whether we have enabled virtual memory
-bool vm_enable = false;
+extern bool vm_enable = false;
 
 // pcb
 struct pcb* init_pcb; 

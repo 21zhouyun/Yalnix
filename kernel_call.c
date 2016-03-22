@@ -80,6 +80,7 @@ int BrkHandler(void *addr){
 int ForkHandler(void){
     // initialize basic page table and pcb for the child process
     struct pte *child_page_table = makePageTable();
+    child_page_table = initializeUserPageTable(child_page_table);
     struct pcb *child_pcb = makePCB(current_pcb, child_page_table);
     int child_pid = child_pcb->pid;
 

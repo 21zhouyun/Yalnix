@@ -7,11 +7,11 @@ int
 main()
 {
     // INIT TEST
-    int i = 1;
-    while (i > 0){
-        TracePrintf(1, "In init round %d\n", i++);
-        Delay(3);
-    }
+    // int i = 1;
+    // while (i > 0){
+    //     TracePrintf(1, "In init round %d\n", i++);
+    //     Delay(3);
+    // }
 
 
     // BRK TEST
@@ -40,19 +40,19 @@ main()
 
 
     // FORK TEST
-    // TracePrintf(1, "In init main. Do fork.\n");
+    TracePrintf(1, "In init main. Do fork.\n");
 
-    // int pid = Fork();
+    int pid = Fork();
 
-    // if (pid == 0){
-    //     TracePrintf(1, "In child of init\n");
-    //     Delay(3);
-    // } else {
-    //     TracePrintf(1, "Spawned child with pid %x\n", pid);
-    //     TracePrintf(1, "in init (%x)\n", GetPid());
-    //     //printf("My pid is %d\n", GetPid());
-    //     Delay(3);
-    // }
+    if (pid == 0){
+        TracePrintf(1, "In child of init\n");
+        Delay(3);
+    } else {
+        TracePrintf(1, "Spawned child with pid %x\n", pid);
+        TracePrintf(1, "in init (%x)\n", GetPid());
+        //printf("My pid is %d\n", GetPid());
+        Delay(3);
+    }
 
     return 0;
 }
