@@ -266,7 +266,7 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb, ExceptionStackFram
      */
     WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_0);
     TracePrintf(1, "Write to TLB FLUSH\n");
-    debugPageTable(user_table);
+    // debugPageTable(user_table);
     
     TracePrintf(1, "Starting reading text and data\n");
 
@@ -286,7 +286,7 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb, ExceptionStackFram
     }
 
     close(fd);			/* we've read it all now */
-    debugPageTable(user_table);
+    // debugPageTable(user_table);
 
 
     /*
