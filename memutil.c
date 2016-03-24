@@ -131,8 +131,6 @@ struct pte* initializeUserPageTable(struct pte* page_table) {
  * @return
  */
 int freeProcess(struct pcb *process_pcb){
-    //TODO: implement this shit.
-
     struct pcb* next_pcb = dequeue_ready();
     TracePrintf(1, "Context Switch to pid %d\n", next_pcb->pid);
     ContextSwitch(MySwitchFunc, current_pcb->context, current_pcb, next_pcb);
@@ -335,6 +333,7 @@ int initializeQueues(){
 }
 
 int enqueue_ready(struct pcb* process_pcb){
+    process_pcb->process_state = READY;
     enqueue(ready_q, process_pcb);
     TracePrintf(1, "Enqueued pid %d into ready queue (%d)\n", process_pcb->pid, ready_q->length);
     return 0;
@@ -345,6 +344,7 @@ int enqueue_waiting(struct pcb* process_pcb){
     return 0;
 }
 int enqueue_delay(struct pcb* process_pcb){
+    process_pcb->process_state = DELAYED;
     enqueue(delay_q, process_pcb);
     TracePrintf(1, "Enqueued pid %d into delay queue (%d)\n", process_pcb->pid, ready_q->length);
     return 0;

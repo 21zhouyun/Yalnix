@@ -82,14 +82,17 @@ void KernelStart(ExceptionStackFrame *frame,
 
     TracePrintf(1, "[DEBUG]init %x (%x)\n", init_pcb->page_table, init_pcb->physical_page_table);
     TracePrintf(1, "[DEBUG]idle %x (%x)\n", idle_pcb->page_table, idle_pcb->physical_page_table);
-    // Since init's pcb is initialize after idle's, the current
-    // temporary
+    
     init_pcb = MakeProcess(cmd_args[0], frame, cmd_args, init_pcb);
     current_pcb = init_pcb;
 
-    // init a SavedContext for idle
+    //init context for idle
     ContextSwitch(MySwitchFunc, idle_pcb->context, idle_pcb, NULL);
-    // idle_pcb = MakeProcess("idle", frame, cmd_args, idle_pcb);
+    TracePrintf(1, "Initialized idle context first time.\n");
+    if (current_pcb->pid == 0){
+        TracePrintf(1, "Load idle first time.\n");
+        current_pcb = MakeProcess("idle", frame, cmd_args, idle_pcb);
+    }
 
 }
 
@@ -126,12 +129,7 @@ int InitPageTable(){
     init_page_table = makePageTable();
     idle_page_table = makePageTable();
 
-    TracePrintf(1, "Made page tables\n");
-
-    init_page_table = initializeInitPageTable(init_page_table);
-    idle_page_table = initializeUserPageTable(idle_page_table);
-
-    TracePrintf(1, "Made init page table at %x\n", init_page_table);
+    init_page_table = initializeInitPageTable(init_page_table); 
 
     WriteRegister( REG_PTR0, (RCS421RegVal) init_page_table);
     WriteRegister( REG_PTR1, (RCS421RegVal) kernel_page_table);
@@ -139,6 +137,9 @@ int InitPageTable(){
 
     WriteRegister( REG_VM_ENABLE, (RCS421RegVal) 1);
     vm_enable = true;
+
+    // idle page table must be initialized after vm is enabled
+    idle_page_table = initializeUserPageTable(idle_page_table);
 
     return 0;
 }
@@ -163,7 +164,7 @@ struct pcb* MakeProcess(char* name, ExceptionStackFrame *frame, char **cmd_args,
         return NULL;
     }
 
-    process_pcb->process_state = LOADED;
+    process_pcb->process_state = RUNNING;
     process_pcb->psr = frame->psr;
 
     if (vm_enable) {
@@ -174,27 +175,3 @@ struct pcb* MakeProcess(char* name, ExceptionStackFrame *frame, char **cmd_args,
     return process_pcb;
 }
 
-struct pcb* MakeIdle(ExceptionStackFrame *frame, struct pcb* process_pcb){
-    //Before loading the program, switch in its page table.
-    //WARNING, This is a hack that only works for idle and init initialization!!!
-    mapToTemp((void*)process_pcb->physical_page_table, kernel_temp_vpn);
-    WriteRegister(REG_PTR0, (RCS421RegVal) process_pcb->physical_page_table);
-    TracePrintf(1, "Flush!\n");
-    WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);
-
-    TracePrintf(1, "Finished creating PCB for pid %d, psr: %d\n", process_pcb->pid, process_pcb->psr);
-
-    // Load the program.
-    if(LoadProgram("idle", args, process_pcb, frame) != 0) {
-        return NULL;
-    }
-    process_pcb->process_state = LOADED;
-    process_pcb->psr = frame->psr;
-
-    if (vm_enable) {
-        WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_0);
-    }
-    TracePrintf(1, "Process initialized at pid %d\n", process_pcb->pid);
-    
-    return process_pcb;
-}

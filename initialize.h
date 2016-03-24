@@ -14,4 +14,3 @@ int InitFrames(unsigned int pmem_size);
 int InitPageTable();
 
 struct pcb* MakeProcess(char* name, ExceptionStackFrame *frame, char **cmd_args, struct pcb* process_pcb);
-struct pcb* MakeIdle(ExceptionStackFrame *frame, struct pcb* process_pcb);

@@ -155,19 +155,7 @@ void MemoryHandler(ExceptionStackFrame *frame){
         // Run the next ready process.
         struct pcb* next_pcb = dequeue_ready();
         TracePrintf(1, "Context Switch to pid %d\n", next_pcb->pid);
-
-        if (next_pcb->pid == 0 && next_pcb->process_state == NOT_LOADED){    
-            // init a SavedContext for idle
-            ContextSwitch(MySwitchFunc, next_pcb->context, next_pcb, NULL);
-        }
-
         ContextSwitch(MySwitchFunc, current_pcb->context, current_pcb, next_pcb);
-
-        if (next_pcb->pid == 0 && next_pcb->process_state == NOT_LOADED){
-            TracePrintf(1, "Load idle first time.\n");
-            next_pcb = MakeIdle(frame, next_pcb);
-        }
-        
     }
 }
 

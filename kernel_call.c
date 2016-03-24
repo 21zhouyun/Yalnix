@@ -17,21 +17,9 @@ int DelayHandler(int clock_ticks, ExceptionStackFrame *frame){
     enqueue_delay(current_pcb);
     struct pcb* next_pcb = dequeue_ready();
     TracePrintf(1, "Context Switch to pid %d\n", next_pcb->pid);
-    TracePrintf(1, "Current context %d\n", current_pcb->context);
-
-    // if (next_pcb->pid == 0 && next_pcb->process_state == NOT_LOADED){    
-    //     // init a SavedContext for idle
-    //     ContextSwitch(MySwitchFunc, next_pcb->context, next_pcb, NULL);
-    //     TracePrintf(1, "Initialized idle context first time.\n");
-    // }
 
     ContextSwitch(MySwitchFunc, current_pcb->context, current_pcb, next_pcb);
-
-    if (next_pcb->pid == 0 && next_pcb->process_state == NOT_LOADED){
-        TracePrintf(1, "Load idle first time.\n");
-        next_pcb = MakeIdle(frame, next_pcb);
-    }
-
+    
     return 0;
 }
 
@@ -121,7 +109,7 @@ void ExitHandler(int status) {
     }
 
     current_pcb->process_state = TERMINATED;
-    TracePrintf(1, "Calling freeProcess");
+    TracePrintf(1, "Calling freeProcess\n");
     freeProcess(current_pcb);
 
 }

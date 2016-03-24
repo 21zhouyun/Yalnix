@@ -6,12 +6,12 @@
 int
 main(int argc, char **argv)
 {
-    // INIT TEST
-    // int i = 1;
-    // while (i > 0){
-    //     TracePrintf(1, "In init round %d\n", i++);
-    //     Delay(3);
-    // }
+    // Exit TEST
+    int i = 1;
+    TracePrintf(1, "In init\n");
+    Delay(1);
+    Exit(0);
+    
 
 
     // BRK TEST
@@ -40,30 +40,30 @@ main(int argc, char **argv)
 
 
     // FORK TEST
-    TracePrintf(1, "In init main. Do fork.\n");
-    Delay(3);
-    int pid = Fork();
-    int status, killed;
-    if (pid == 0){
-        TracePrintf(1, "In child of init\n");
+    // TracePrintf(1, "In init main. Do fork.\n");
+    // Delay(3);
+    // int pid = Fork();
+    // int status, killed;
+    // if (pid == 0){
+    //     TracePrintf(1, "In child of init\n");
 
-        // ./yalnix -lh 5 -lu 5 -lk 5 init exectest exectest
-        // load init shows correct args, but when loading exectest, the arglist is wrong.
-        // this does not cause the read to change contents.
-        //Exec(argv[1], argv + 1);
+    //     // ./yalnix -lh 5 -lu 5 -lk 5 init exectest exectest
+    //     // load init shows correct args, but when loading exectest, the arglist is wrong.
+    //     // this does not cause the read to change contents.
+    //     //Exec(argv[1], argv + 1);
 
-        Delay(3);
-        TracePrintf(1, "Child exiting.\n");
-        Exit(0);
-    } else {
-        TracePrintf(1, "Spawned child with pid %x\n", pid);
-        TracePrintf(1, "in init (%x)\n", GetPid());
-        //printf("My pid is %d\n", GetPid());
-        Delay(3);
-        killed = Wait(&status);
-        TracePrintf(1, "In init: Killed child %d, status: %d\n", killed, status);
-        Exit(0);
-    }
+    //     Delay(3);
+    //     TracePrintf(1, "Child exiting.\n");
+    //     Exit(0);
+    // } else {
+    //     TracePrintf(1, "Spawned child with pid %x\n", pid);
+    //     TracePrintf(1, "in init (%x)\n", GetPid());
+    //     //printf("My pid is %d\n", GetPid());
+    //     Delay(3);
+    //     killed = Wait(&status);
+    //     TracePrintf(1, "In init: Killed child %d, status: %d\n", killed, status);
+    //     Exit(0);
+    // }
 
     return 0;
 }

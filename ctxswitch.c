@@ -26,10 +26,12 @@ SavedContext *MySwitchFunc(SavedContext *ctxp, void *p1, void *p2)
 		WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);
 
 		//update currnet pcb
-		if (current_pcb->pid != 0 && current_pcb->process_state != TERMINATED){
+		if (current_pcb->pid != 0 && current_pcb->process_state == RUNNING){
 			enqueue_ready(current_pcb);
 		}
 		current_pcb = pcb2;
+        // the process we switch to must be in the state RUNNING afterwards
+        current_pcb->process_state = RUNNING;
 		TracePrintf(1, "Switch to page table at %x (%x)\n", pcb2->physical_page_table, pcb2->page_table);
 
 		//TODO: make sure this is the one we want to return??
@@ -64,6 +66,7 @@ SavedContext *ForkSwitchFunc(SavedContext *ctxp, void *p1, void *p2){
 		enqueue_ready(current_pcb);
 	}
     current_pcb = child_pcb;
+    current_pcb->process_state = RUNNING;
 
     return child_pcb->context;
 }
