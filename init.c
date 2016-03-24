@@ -41,7 +41,7 @@ main(int argc, char **argv)
 
     // FORK TEST
     TracePrintf(1, "In init main. Do fork.\n");
-
+    Delay(3);
     int pid = Fork();
     int status, killed;
     if (pid == 0){

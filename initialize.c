@@ -84,7 +84,6 @@ void KernelStart(ExceptionStackFrame *frame,
     TracePrintf(1, "[DEBUG]idle %x (%x)\n", idle_pcb->page_table, idle_pcb->physical_page_table);
     // Since init's pcb is initialize after idle's, the current
     // temporary
-    TracePrintf(1, "%s\n", cmd_args[1]);
     init_pcb = MakeProcess(cmd_args[0], frame, cmd_args, init_pcb);
     current_pcb = init_pcb;
 
@@ -156,6 +155,9 @@ struct pcb* MakeProcess(char* name, ExceptionStackFrame *frame, char **cmd_args,
 
     TracePrintf(1, "Finished creating PCB for pid %d, psr: %d\n", process_pcb->pid, process_pcb->psr);
 
+    if (name == NULL) {
+        name = "init";
+    }
     // Load the program.
     if(LoadProgram(name, cmd_args, process_pcb, frame) != 0) {
         return NULL;
