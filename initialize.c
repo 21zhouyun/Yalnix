@@ -21,8 +21,6 @@ void *kernel_brk;
 
 char **args;
 
-// externs
-extern int LoadProgram(char *name, char **args, struct pcb* program_pcb, ExceptionStackFrame *frame);
 
 int SetKernelBrk(void *addr) {
     int numNeededPages, pfn, vpn, i;
@@ -83,10 +81,11 @@ void KernelStart(ExceptionStackFrame *frame,
     init_pcb = makePCB(NULL, init_page_table);
 
     TracePrintf(1, "[DEBUG]init %x (%x)\n", init_pcb->page_table, init_pcb->physical_page_table);
-     TracePrintf(1, "[DEBUG]idle %x (%x)\n", idle_pcb->page_table, idle_pcb->physical_page_table);
+    TracePrintf(1, "[DEBUG]idle %x (%x)\n", idle_pcb->page_table, idle_pcb->physical_page_table);
     // Since init's pcb is initialize after idle's, the current
     // temporary
-    init_pcb = MakeProcess("init", frame, cmd_args, init_pcb);
+    TracePrintf(1, "%s\n", cmd_args[1]);
+    init_pcb = MakeProcess(cmd_args[0], frame, cmd_args, init_pcb);
     current_pcb = init_pcb;
 
     // init a SavedContext for idle

@@ -4,7 +4,7 @@
 #include <comp421/yalnix.h>
 #include <stdlib.h>
 int
-main()
+main(int argc, char **argv)
 {
     // INIT TEST
     // int i = 1;
@@ -46,6 +46,12 @@ main()
 
     if (pid == 0){
         TracePrintf(1, "In child of init\n");
+
+        // ./yalnix -lh 5 -lu 5 -lk 5 init exectest exectest
+        // load init shows correct args, but when loading exectest, the arglist is wrong.
+        // this does not cause the read to change contents.
+        Exec(argv[1], argv + 1);
+
         Delay(3);
     } else {
         TracePrintf(1, "Spawned child with pid %x\n", pid);

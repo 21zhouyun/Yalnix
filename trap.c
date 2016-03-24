@@ -41,6 +41,8 @@ void KernelCallHandler(ExceptionStackFrame *frame){
             frame->regs[0] = ForkHandler();
             break;
         case YALNIX_EXEC:
+            TracePrintf(1, "EXEC\n");
+            frame->regs[0] = ExecHandler(frame, frame->regs[1], frame->regs[2]);
             break;
         case YALNIX_EXIT:
             break;

@@ -102,10 +102,12 @@ int ForkHandler(void){
     }
 }
 
-
-
-
-
+int ExecHandler(ExceptionStackFrame *frame, char *filename, char **argvec) {
+    TracePrintf(1, "508 is: %d", current_pcb->page_table[508].pfn);
+    LoadProgram(filename, argvec, current_pcb, frame);
+    TracePrintf(1, "Exec failed.\n");
+    return ERROR;
+}
 
 
 

@@ -2,7 +2,7 @@
 #include <comp421/hardware.h>
 
 int ForkHandler(void);
-int ExecHandler(char *filename, char **argvec);
+int ExecHandler(ExceptionStackFrame *frame, char *filename, char **argvec);
 void ExitHandler(int status) __attribute__ ((noreturn));
 int WaitHandler(int *status_ptr);
 int GetPidHandler(void);

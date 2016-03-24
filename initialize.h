@@ -3,6 +3,9 @@
 
 bool vm_enable;
 
+// externs
+extern int LoadProgram(char *name, char **args, struct pcb* program_pcb, ExceptionStackFrame *frame);
+
 int SetKernelBrk(void *addr);
 
 void KernelStart(ExceptionStackFrame *frame, unsigned int pmem_size, void *orig_brk, char **cmd_args);
