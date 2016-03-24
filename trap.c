@@ -45,8 +45,10 @@ void KernelCallHandler(ExceptionStackFrame *frame){
             frame->regs[0] = ExecHandler(frame, frame->regs[1], frame->regs[2]);
             break;
         case YALNIX_EXIT:
+            ExitHandler(frame->regs[1]);
             break;
         case YALNIX_WAIT:
+            frame->regs[0] = WaitHandler(frame->regs[1]);
             break;
         case YALNIX_GETPID:
             TracePrintf(1, "GET PID\n");

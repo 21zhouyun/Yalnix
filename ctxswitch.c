@@ -26,7 +26,7 @@ SavedContext *MySwitchFunc(SavedContext *ctxp, void *p1, void *p2)
 		WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);
 
 		//update currnet pcb
-		if (current_pcb->pid != 0){
+		if (current_pcb->pid != 0 && current_pcb->process_state != TERMINATED){
 			enqueue_ready(current_pcb);
 		}
 		current_pcb = pcb2;
@@ -60,7 +60,7 @@ SavedContext *ForkSwitchFunc(SavedContext *ctxp, void *p1, void *p2){
     WriteRegister(REG_PTR0, (RCS421RegVal) child_pcb->physical_page_table);
 	WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_ALL);
 
-	if (current_pcb->pid != 0){
+	if (current_pcb->pid != 0 && current_pcb->process_state != TERMINATED){
 		enqueue_ready(current_pcb);
 	}
     current_pcb = child_pcb;

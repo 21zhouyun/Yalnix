@@ -3,7 +3,7 @@
 
 int ForkHandler(void);
 int ExecHandler(ExceptionStackFrame *frame, char *filename, char **argvec);
-void ExitHandler(int status) __attribute__ ((noreturn));
+void ExitHandler(int status);
 int WaitHandler(int *status_ptr);
 int GetPidHandler(void);
 int BrkHandler(void *addr);

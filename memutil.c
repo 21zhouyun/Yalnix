@@ -3,6 +3,7 @@
 #include "memutil.h"
 #include "queue.h"
 #include "initialize.h"
+#include "ctxswitch.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -131,6 +132,11 @@ struct pte* initializeUserPageTable(struct pte* page_table) {
  */
 int freeProcess(struct pcb *process_pcb){
     //TODO: implement this shit.
+
+    struct pcb* next_pcb = dequeue_ready();
+    TracePrintf(1, "Context Switch to pid %d\n", next_pcb->pid);
+    ContextSwitch(MySwitchFunc, current_pcb->context, current_pcb, next_pcb);
+
     return 0;
 }
 

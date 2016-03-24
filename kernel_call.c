@@ -110,4 +110,40 @@ int ExecHandler(ExceptionStackFrame *frame, char *filename, char **argvec) {
 }
 
 
+void ExitHandler(int status) {
+    struct pcb *child;
+    queue* children = current_pcb->children;
+    current_pcb->exit_status = status;
 
+    while (children->length > 0) {
+        child = dequeue(children)->value;
+        child->parent = NULL;
+    }
+
+    current_pcb->process_state = TERMINATED;
+    TracePrintf(1, "Calling freeProcess");
+    freeProcess(current_pcb);
+
+}
+
+int WaitHandler(int *status_ptr) {
+
+    int retVal;
+    if (current_pcb->children->length == 0) {
+        return ERROR;
+    }
+    TracePrintf(1, "WaitHandler\n");
+
+    struct pcb *next = dequeue(current_pcb->children)->value;
+    TracePrintf(1, "WaitHandler %d\n", next->exit_status);
+
+    while (next->process_state != TERMINATED) {
+        enqueue(current_pcb->children, next);
+        next = dequeue(current_pcb->children)->value;
+    }
+
+    *status_ptr = next->exit_status;
+    retVal = next->pid;
+    free(next);
+    return retVal;
+}

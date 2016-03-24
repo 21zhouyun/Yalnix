@@ -52,6 +52,7 @@ struct pcb{
     SavedContext *context;
     struct pcb* parent;
     queue* children;
+    int exit_status;
     unsigned long psr;
     void *user_stack_limit;
     void *current_brk;
