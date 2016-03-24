@@ -73,7 +73,6 @@ int ForkHandler(void){
     int child_pid = child_pcb->pid;
 
     enqueue(current_pcb->children, child_pcb);
-    child_pcb->process_state = LOADED;
     TracePrintf(1, "initialized child process %x for current process %x\n",
                 child_pcb->pid, current_pcb->pid);
 
@@ -91,8 +90,8 @@ int ForkHandler(void){
 }
 
 int ExecHandler(ExceptionStackFrame *frame, char *filename, char **argvec) {
-    TracePrintf(1, "508 is: %d", current_pcb->page_table[508].pfn);
-    LoadProgram(filename, argvec, current_pcb, frame);
+    TracePrintf(1, "508 is: %d\n", current_pcb->page_table[508].pfn);
+    MakeProcess(filename, frame, argvec, current_pcb);
     TracePrintf(1, "Exec failed.\n");
     return ERROR;
 }

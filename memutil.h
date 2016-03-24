@@ -97,5 +97,6 @@ struct pcb* dequeue_delay();
 
 //debug
 void debugPageTable(struct pte *page_table);
+void debugKernelStack(struct pte *page_table);
 
 

@@ -184,7 +184,7 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb, ExceptionStackFram
     for (i = 0; i < PAGE_TABLE_LEN; i++){
         if (i < base && user_table[i].valid == 1){
             user_table[i].valid = 0;
-            setFrame(i, true);
+            setFrame(user_table[i].pfn, true);
             TracePrintf(1, "%d\n", i);
         }
     }
@@ -266,8 +266,10 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb, ExceptionStackFram
      */
     WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_0);
     TracePrintf(1, "Write to TLB FLUSH\n");
-    TracePrintf(1, "508 is : %d\n", user_table[508].pfn);
+    debugPageTable(user_table);
     
+    TracePrintf(1, "Starting reading text and data\n");
+
     /*
      *  Read the text and data from the file into memory.
      */
@@ -284,7 +286,7 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb, ExceptionStackFram
     }
 
     close(fd);			/* we've read it all now */
-    TracePrintf(1, "508 is : %d\n", user_table[508].pfn);
+    debugPageTable(user_table);
 
 
     /*

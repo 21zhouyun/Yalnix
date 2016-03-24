@@ -363,10 +363,29 @@ struct pcb* dequeue_delay(){
 }
 
 
-//debug
+/**
+ * print debug info of the page table.
+ * @param page_table virtual address of the page table
+ */
 void debugPageTable(struct pte *page_table){
     int i;
     for(i = 0; i < PAGE_TABLE_LEN; i++){
+        TracePrintf(1, "[DEBUG]vpn %x: valid %x, kprot %x, uprot %x, pfn %x\n",
+            i, page_table[i].valid, page_table[i].kprot, page_table[i].uprot,
+            page_table[i].pfn);
+    }
+}
+
+/**
+ * print debug info of the kernel stack
+ * @param page_table virtual address of the page table
+ */
+void debugKernelStack(struct pte *page_table){
+    long i;
+    long limit = GET_VPN(KERNEL_STACK_LIMIT);
+    long base = GET_VPN(KERNEL_STACK_BASE);
+    
+    for(i = base; i < limit; i++){
         TracePrintf(1, "[DEBUG]vpn %x: valid %x, kprot %x, uprot %x, pfn %x\n",
             i, page_table[i].valid, page_table[i].kprot, page_table[i].uprot,
             page_table[i].pfn);

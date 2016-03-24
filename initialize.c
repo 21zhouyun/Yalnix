@@ -151,10 +151,6 @@ struct pcb* MakeProcess(char* name, ExceptionStackFrame *frame, char **cmd_args,
     TracePrintf(1, "%x\n", process_pcb->physical_page_table);
 
     WriteRegister(REG_PTR0, (RCS421RegVal) (process_pcb->physical_page_table));
-    TracePrintf(1, "Flush!\n");
-    // WriteRegister(REG_TLB_FLUSH, (RCS421RegVal) TLB_FLUSH_ALL);
-
-    TracePrintf(1, "Finished creating PCB for pid %d, psr: %d\n", process_pcb->pid, process_pcb->psr);
 
     if (name == NULL) {
         name = "init";
