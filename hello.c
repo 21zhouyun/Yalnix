@@ -7,6 +7,6 @@ int main(int argc, char **argv)
     int i = 0;
     while(++i<1000000)
     {   
-        fprintf(stderr, "helloword%d\n", i);
+        TracePrintf(1, "helloword%d\n", i);
     }
 }

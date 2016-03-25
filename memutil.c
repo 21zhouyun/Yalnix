@@ -131,6 +131,17 @@ struct pte* initializeUserPageTable(struct pte* page_table) {
  * @return
  */
 int freeProcess(struct pcb *process_pcb){
+    int i;
+    //free page table pfn
+    for (i = 0; i < PAGE_TABLE_LEN; i++){
+        if (process_pcb->page_table[i].valid == 1){
+            setFrame(process_pcb->page_table[i].pfn, true);
+        }
+    }
+    //free page table
+    setHalfFrame(process_pcb->physical_page_table, true);
+
+    //switch to next process
     struct pcb* next_pcb = dequeue_ready();
     TracePrintf(1, "Context Switch to pid %d\n", next_pcb->pid);
     ContextSwitch(MySwitchFunc, current_pcb->context, current_pcb, next_pcb);
@@ -315,11 +326,13 @@ int setHalfFrame(long addr, bool state){
 
 /**
  * Greedily get the first free frame
- * TODO: add back invalid pages after VM is enabled
  */
 long getFreeFrame(){
-    long i;
-    for (i = MEM_INVALID_PAGES; i < num_frames; i++){
+    long i = MEM_INVALID_PAGES;
+    if (vm_enable == true){
+        i = 0;
+    }
+    for (; i < num_frames; i++){
         if (free_frames[i].free == true){
             setFrame(i, false);
             return i;
