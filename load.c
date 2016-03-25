@@ -90,7 +90,6 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb, ExceptionStackFram
     size = 0;
     for (i = 0; args[i] != NULL; i++) {
 	size += strlen(args[i]) + 1;
-    TracePrintf(1, "%s\n", args[i]);
     }
     argcount = i;
     TracePrintf(0, "LoadProgram: size %d, argcount %d\n", size, argcount);
@@ -185,10 +184,8 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb, ExceptionStackFram
         if (i < base && user_table[i].valid == 1){
             user_table[i].valid = 0;
             setFrame(user_table[i].pfn, true);
-            TracePrintf(1, "%d\n", i);
         }
     }
-    TracePrintf(1, "%d\n", PAGE_TABLE_LEN);
     TracePrintf(1, "Reset user page table\n");
 
     /*
@@ -219,7 +216,6 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb, ExceptionStackFram
         user_table[i + k].kprot = (PROT_READ | PROT_WRITE);
         user_table[i + k].uprot = (PROT_READ | PROT_EXEC);
         user_table[i + k].pfn = getFreeFrame();
-        TracePrintf(1, "map vpn %d to pfn %d\n", i+k, user_table[i + k].pfn);
     }
     TracePrintf(1, "Updated text section\n");
     /* Then the data and bss pages */
@@ -235,7 +231,6 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb, ExceptionStackFram
         user_table[i + k].kprot = (PROT_READ | PROT_WRITE);
         user_table[i + k].uprot = (PROT_READ | PROT_WRITE);
         user_table[i + k].pfn = getFreeFrame();
-        TracePrintf(1, "map vpn %d to pfn %d\n", i+k, user_table[i + k].pfn);
     }
         TracePrintf(1, "Updated data/bss section\n");
     /* And finally the user stack pages */
@@ -254,8 +249,6 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb, ExceptionStackFram
         user_table[i + k].kprot = (PROT_READ | PROT_WRITE);
         user_table[i + k].uprot = (PROT_READ | PROT_WRITE);
         user_table[i + k].pfn = getFreeFrame();
-        TracePrintf(1, "Updated stack section: %d, %d\n", i+k, user_table[i + k].pfn);
-        TracePrintf(1, "map vpn %d to pfn %d\n", i+k, user_table[i + k].pfn);
     }
     TracePrintf(1, "Updated stack section\n");
 
@@ -299,7 +292,6 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb, ExceptionStackFram
     for (i = 0; i < text_npg; i++){
         user_table[i + k].kprot = (PROT_READ | PROT_EXEC);
     }
-    TracePrintf(1, "508 is : %d\n", user_table[508].pfn);
 
     TracePrintf(1, "Update text section with exec priority\n");
     WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_0);
@@ -316,7 +308,6 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb, ExceptionStackFram
     // >>>> Initialize pc for the current process to (void *)li.entry
     frame->pc = (void *)li.entry;
     TracePrintf(1, "Update frame pc to %d\n", frame->pc);
-    TracePrintf(1, "507 is : %d\n", user_table[507].pfn);
 
     /*
      *  Now, finally, build the argument list on the new stack.
@@ -325,14 +316,8 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb, ExceptionStackFram
     cp2 = argbuf;
 
     for (i = 0; i < argcount; i++) {      /* copy each argument and set argv */
-        TracePrintf(1, "Returning. %d\n", i);
     	*cpp++ = cp;
-        TracePrintf(1, "Returning. %d\n", i);
-        TracePrintf(1, "%s\n", cp2);
     	strcpy(cp, cp2);
-        TracePrintf(1, "Returning. %p, %d\n", cp, strlen(cp));
-
-        TracePrintf(1, "Returning. %d\n", i);
     	cp += strlen(cp) + 1;
     	cp2 += strlen(cp2) + 1;
     }
@@ -357,7 +342,6 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb, ExceptionStackFram
     frame->psr = 0;
 
     /* Set heap's initial break*/
-    TracePrintf(1, "Returning.\n");
 
     program_pcb->current_brk = (MEM_INVALID_PAGES + text_npg + data_bss_npg) << PAGESHIFT;
     return (0);

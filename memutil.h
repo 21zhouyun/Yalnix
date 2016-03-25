@@ -20,7 +20,6 @@
 #define DELAYED 1 //in delay queue 
 #define TERMINATED 2 //take care by exit handler
 #define READY 3 //take care by ready queue
-#define EXITED 4 //take care by exit handler
 
 struct frame* free_frames;//global array of all free frames
 int num_frames;
@@ -44,7 +43,6 @@ struct pcb* current_pcb; //pcb for current process
 // process queues
 // should be queues of pcbs
 queue* ready_q;
-queue* waiting_q;
 queue* delay_q;
 
 struct pcb{
@@ -88,11 +86,9 @@ void* mapToTemp(void* addr, long temp_vpn);
 // manage process queues
 int initializeQueues();
 int enqueue_ready(struct pcb* process_pcb);
-int enqueue_waiting(struct pcb* process_pcb); //TODO: waiting queue is just useless?
 int enqueue_delay(struct pcb* process_pcb);
 //TODO: free node after dequeue
 struct pcb* dequeue_ready();
-struct pcb* dequeue_waiting();
 struct pcb* dequeue_delay();
 
 //debug

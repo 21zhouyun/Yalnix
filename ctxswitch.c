@@ -19,6 +19,10 @@ SavedContext *MySwitchFunc(SavedContext *ctxp, void *p1, void *p2)
 	} else {
 		// Doing context switch
 		struct pcb *pcb1 = (struct pcb *) p1;
+        if (pcb1->process_state == TERMINATED){
+            setFrame(GET_PFN(pcb1->physical_page_table), true);
+        }
+
 		struct pcb *pcb2 = (struct pcb *) p2;
 
         pcb2->page_table = mapToTemp((void*)pcb2->physical_page_table, kernel_temp_vpn);

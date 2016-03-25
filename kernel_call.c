@@ -91,9 +91,7 @@ int ForkHandler(void){
 
 int ExecHandler(ExceptionStackFrame *frame, char *filename, char **argvec) {
     TracePrintf(1, "508 is: %d\n", current_pcb->page_table[508].pfn);
-    MakeProcess(filename, frame, argvec, current_pcb);
-    TracePrintf(1, "Exec failed.\n");
-    return ERROR;
+    return MakeProcess(filename, frame, argvec, current_pcb);
 }
 
 
@@ -109,28 +107,38 @@ void ExitHandler(int status) {
 
     current_pcb->process_state = TERMINATED;
     TracePrintf(1, "Calling freeProcess\n");
+
     freeProcess(current_pcb);
 
 }
 
 int WaitHandler(int *status_ptr) {
-
-    int retVal;
     if (current_pcb->children->length == 0) {
         return ERROR;
     }
     TracePrintf(1, "WaitHandler\n");
 
-    struct pcb *next = dequeue(current_pcb->children)->value;
-    TracePrintf(1, "WaitHandler %d\n", next->exit_status);
+    while (current_pcb->children->length > 0){
+        node* current = current_pcb->children->head;
+        struct pcb* child_pcb;
+        // loop over each children
+        while (current != NULL){
+            child_pcb = (struct pcb*)current->value;
+            if (child_pcb->process_state == TERMINATED){
+                pop(current_pcb->children, current);
+                *status_ptr = child_pcb->exit_status;
+                free(child_pcb);
+                return child_pcb->pid;
+            }
+            current = current->next;
+        }
 
-    while (next->process_state != TERMINATED) {
-        enqueue(current_pcb->children, next);
-        next = dequeue(current_pcb->children)->value;
+        // Context switch to another process
+        struct pcb* next_pcb = dequeue_ready();
+        TracePrintf(1, "Context Switch to pid %d\n", next_pcb->pid);
+
+        ContextSwitch(MySwitchFunc, current_pcb->context, current_pcb, next_pcb);
+
     }
 
-    *status_ptr = next->exit_status;
-    retVal = next->pid;
-    free(next);
-    return retVal;
 }

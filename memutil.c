@@ -134,7 +134,6 @@ int freeProcess(struct pcb *process_pcb){
     struct pcb* next_pcb = dequeue_ready();
     TracePrintf(1, "Context Switch to pid %d\n", next_pcb->pid);
     ContextSwitch(MySwitchFunc, current_pcb->context, current_pcb, next_pcb);
-
     return 0;
 }
 
@@ -327,7 +326,6 @@ void* mapToTemp(void* addr, long temp_vpn){
 
 int initializeQueues(){
     ready_q = makeQueue(MAX_QUEUE_SIZE);
-    waiting_q = makeQueue(MAX_QUEUE_SIZE);
     delay_q = makeQueue(MAX_QUEUE_SIZE);
     return 0;
 }
@@ -338,11 +336,6 @@ int enqueue_ready(struct pcb* process_pcb){
     TracePrintf(1, "Enqueued pid %d into ready queue (%d)\n", process_pcb->pid, ready_q->length);
     return 0;
 }
-int enqueue_waiting(struct pcb* process_pcb){
-    enqueue(waiting_q, process_pcb);
-    TracePrintf(1, "Enqueued pid %d into waiting queue (%d)\n", process_pcb->pid, ready_q->length);
-    return 0;
-}
 int enqueue_delay(struct pcb* process_pcb){
     process_pcb->process_state = DELAYED;
     enqueue(delay_q, process_pcb);
@@ -350,16 +343,24 @@ int enqueue_delay(struct pcb* process_pcb){
     return 0;
 }
 struct pcb* dequeue_ready(){
+    struct pcb* result;
     if (ready_q->length == 0){
         return idle_pcb;
     }
-    return (struct pcb*)(dequeue(ready_q)->value);
-}
-struct pcb* dequeue_waiting(){
-    return (struct pcb*)(dequeue(waiting_q)->value);
+    node* n =dequeue(ready_q);
+    result = (struct pcb*)n->value;
+    free(n);
+    return result;
 }
 struct pcb* dequeue_delay(){
-    return (struct pcb*)(dequeue(delay_q)->value);
+    struct pcb* result;
+    if (delay_q->length == 0){
+        return idle_pcb;
+    }
+    node* n =dequeue(delay_q);
+    result = (struct pcb*)n->value;
+    free(n);
+    return result;
 }
 
 
@@ -384,7 +385,7 @@ void debugKernelStack(struct pte *page_table){
     long i;
     long limit = GET_VPN(KERNEL_STACK_LIMIT);
     long base = GET_VPN(KERNEL_STACK_BASE);
-    
+
     for(i = base; i < limit; i++){
         TracePrintf(1, "[DEBUG]vpn %x: valid %x, kprot %x, uprot %x, pfn %x\n",
             i, page_table[i].valid, page_table[i].kprot, page_table[i].uprot,
