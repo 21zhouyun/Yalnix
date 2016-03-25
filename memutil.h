@@ -62,6 +62,8 @@ struct pcb{
 
 struct frame{
     bool free;
+    bool upper;
+    bool lower;
 };
 
 // manage page tables
@@ -80,6 +82,7 @@ struct pcb* makePCB(struct pcb *parent, struct pte* page_table);
 // manage frames
 int initializeFrames(int num_free_frames);
 int setFrame(int index, bool state);
+int setHalfFrame(long addr, bool state);
 long getFreeFrame();
 void* mapToTemp(void* addr, long temp_vpn);
 

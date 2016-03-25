@@ -9,6 +9,8 @@
 #include "ctxswitch.h"
 
 
+int round = 0;
+
 void *trap_vector[TRAP_VECTOR_SIZE];
 
 
@@ -90,7 +92,8 @@ void ClockHandler(ExceptionStackFrame *frame){
     }
 
     // see if we are in idle
-    if (current_pcb->pid == 0 && ready_q->length > 0){
+    if (current_pcb->pid == 0 && ready_q->length > 0 || 
+        current_pcb->pid > 0 && round++){ // round robin algo
         struct pcb* next_pcb = dequeue_ready();
         TracePrintf(1, "Found ready pid %d, swith to it.\n", next_pcb->pid);
         ContextSwitch(MySwitchFunc, current_pcb->context, current_pcb, next_pcb);

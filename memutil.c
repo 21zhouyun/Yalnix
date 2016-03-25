@@ -264,6 +264,8 @@ int initializeFrames(int num_of_free_frames){
 
     for (i = 0; i < num_free_frames; i++){
         free_frames[i].free = true;
+        free_frames[i].upper = true;
+        free_frames[i].lower = true;
     }
 
     return 0;
@@ -276,12 +278,39 @@ int initializeFrames(int num_of_free_frames){
  */
 int setFrame(int index, bool state){
     free_frames[index].free = state;
+    free_frames[index].upper = state;
+    free_frames[index].lower = state;
     if (state == true){
         num_free_frames++;
+        TracePrintf(1, "Mark pfn %x as free\n", index);
     } else {
         num_free_frames--;
+        TracePrintf(1, "Mark pfn %x as not free\n", index);
     }
     return num_free_frames;
+}
+
+/**
+ * Given a physical address, set the upper/lower half of the frame
+ * to state
+ * @param  addr  physical address
+ * @param  state boolean state
+ */
+int setHalfFrame(long addr, bool state){
+    long pfn = GET_PFN(addr);
+    long offset = GET_OFFSET(addr);
+
+    if (offset < PAGE_TABLE_SIZE){
+        free_frames[pfn].upper = state;
+    } else {
+        free_frames[pfn].lower = state;
+    }
+
+    if (free_frames[pfn].upper == free_frames[pfn].lower){
+        // if both the upper and lower half of the frame have the same state
+        // the frame itself must share the same state
+        setFrame(pfn, state);
+    }
 }
 
 /**

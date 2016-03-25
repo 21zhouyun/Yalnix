@@ -232,7 +232,7 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb, ExceptionStackFram
         user_table[i + k].uprot = (PROT_READ | PROT_WRITE);
         user_table[i + k].pfn = getFreeFrame();
     }
-        TracePrintf(1, "Updated data/bss section\n");
+    TracePrintf(1, "Updated data/bss section\n");
     /* And finally the user stack pages */
     // >>>> For stack_npg number of PTEs in the Region 0 page table
     // >>>> corresponding to the user stack (the last page of the
@@ -294,6 +294,7 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb, ExceptionStackFram
     }
 
     TracePrintf(1, "Update text section with exec priority\n");
+    // debugPageTable(user_table);
     WriteRegister(REG_TLB_FLUSH, TLB_FLUSH_0);
 
     /*
