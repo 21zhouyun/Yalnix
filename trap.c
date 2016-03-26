@@ -47,9 +47,11 @@ void KernelCallHandler(ExceptionStackFrame *frame){
             frame->regs[0] = ExecHandler(frame, frame->regs[1], frame->regs[2]);
             break;
         case YALNIX_EXIT:
+            TracePrintf(1, "EXIT\n");
             ExitHandler(frame->regs[1]);
             break;
         case YALNIX_WAIT:
+            TracePrintf(1, "WAIT\n");
             frame->regs[0] = WaitHandler(frame->regs[1]);
             break;
         case YALNIX_GETPID:
@@ -67,6 +69,9 @@ void KernelCallHandler(ExceptionStackFrame *frame){
         case YALNIX_TTY_READ:
             break;
         case YALNIX_TTY_WRITE:
+            TracePrintf(1, "TTY_WRITE\n");
+            TracePrintf(1, "id %d, buf %s, len %d\n", frame->regs[1], frame->regs[2], frame->regs[3]);
+            frame->regs[0] = TtyWriteHandler(frame->regs[1], frame->regs[2], frame->regs[3]);
             break;
         default:
             TracePrintf(1, "Unknow kernel call!");
@@ -158,17 +163,34 @@ void MemoryHandler(ExceptionStackFrame *frame){
 
 void MathHandler(ExceptionStackFrame *frame){
     TracePrintf(0, "MathHandler\n");
-    Halt();
+    current_pcb->process_state = TERMINATED;
+    freeProcess(current_pcb);
 }
 
 void TtyReceiveHandler(ExceptionStackFrame *frame){
     TracePrintf(0, "TtyReceiveHandler\n");
-    Halt();
+    int tty_id = frame->code;
+    int read_len;
+
+    char *buf = (char*)malloc(sizeof(char) * TERMINAL_MAX_LINE);
+    read_len = TtyReceive(tty_id, (void*)buf, TERMINAL_MAX_LINE);
+
+    //TODO finish this after implementing the kernel call
 }
 
 void TtyTransmitHandler(ExceptionStackFrame *frame){
-    TracePrintf(0, "TtyTransmitHandler\n");
-    Halt();
+    TracePrintf(0, "TtyTransmitHandler from tty %d\n", frame->code);
+    int tty_id = frame->code;
+    struct tty* terminal = &terminals[tty_id];
+
+    // unblock the writing process
+    struct pcb* process_pcb = terminal->write_pcb;
+    TracePrintf(1, "Finish write request for pid %d\n", process_pcb->pid);
+    enqueue_ready(process_pcb);
+
+    if (terminal->write_q->length > 0){
+        enqueue_ready(dequeue(terminal->write_q));
+    }
 }
 
 

@@ -141,10 +141,7 @@ int freeProcess(struct pcb *process_pcb){
     //free page table
     setHalfFrame(process_pcb->physical_page_table, true);
 
-    //switch to next process
-    struct pcb* next_pcb = dequeue_ready();
-    TracePrintf(1, "Context Switch to pid %d\n", next_pcb->pid);
-    ContextSwitch(MySwitchFunc, current_pcb->context, current_pcb, next_pcb);
+    SwitchToNextProc(TERMINATED);
     return 0;
 }
 
@@ -403,6 +400,16 @@ struct pcb* dequeue_delay(){
     result = (struct pcb*)n->value;
     free(n);
     return result;
+}
+
+
+void initializeTerminals(){
+    int i;
+    terminals = (struct tty*)malloc(sizeof(struct tty) * NUM_TERMINALS);
+    for (i = 0; i < NUM_TERMINALS; i++){
+        terminals[i].write_pcb = NULL;
+        terminals[i].write_q = makeQueue(MAX_QUEUE_SIZE);
+    }
 }
 
 

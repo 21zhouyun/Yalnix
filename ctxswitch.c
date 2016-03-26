@@ -69,3 +69,15 @@ SavedContext *ForkSwitchFunc(SavedContext *ctxp, void *p1, void *p2){
 
     return child_pcb->context;
 }
+
+/**
+ * Modify the current process' state and switch to the next available process.
+ * @param state [description]
+ */
+void SwitchToNextProc(int state){
+    current_pcb->process_state = state;
+
+    struct pcb* next_pcb = dequeue_ready();
+    TracePrintf(1, "Context Switch to pid %d\n", next_pcb->pid);
+    ContextSwitch(MySwitchFunc, current_pcb->context, current_pcb, next_pcb);
+}

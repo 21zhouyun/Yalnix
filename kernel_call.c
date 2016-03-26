@@ -3,6 +3,7 @@
 #include "ctxswitch.h"
 #include "initialize.h"
 #include <stdlib.h>
+#include <string.h>
 
 int GetPidHandler(void){
     return current_pcb->pid;
@@ -15,11 +16,7 @@ int DelayHandler(int clock_ticks, ExceptionStackFrame *frame){
     // Delay current process
     current_pcb->delay_remain = clock_ticks;
     enqueue_delay(current_pcb);
-    struct pcb* next_pcb = dequeue_ready();
-    TracePrintf(1, "Context Switch to pid %d\n", next_pcb->pid);
-
-    ContextSwitch(MySwitchFunc, current_pcb->context, current_pcb, next_pcb);
-    
+    SwitchToNextProc(DELAYED);
     return 0;
 }
 
@@ -132,13 +129,37 @@ int WaitHandler(int *status_ptr) {
             }
             current = current->next;
         }
-
-        // Context switch to another process
-        struct pcb* next_pcb = dequeue_ready();
-        TracePrintf(1, "Context Switch to pid %d\n", next_pcb->pid);
-
-        ContextSwitch(MySwitchFunc, current_pcb->context, current_pcb, next_pcb);
-
+        SwitchToNextProc(RUNNING);
     }
+
+}
+
+int TtyReadHandler(int tty_id, void *buf, int len){
+    current_pcb->read_buf = (char*)malloc(sizeof(char) * len);
+
+}
+
+int TtyWriteHandler(int tty_id, void *buf, int len){
+    struct tty* terminal = &terminals[tty_id];
+    char* buffer = (char*)buf;
+    TracePrintf(1, "init variables\n");
+    // if there is a process writing to the terminal, block the current process
+    if (terminal->write_pcb != NULL && current_pcb->pid != terminal->write_pcb->pid){
+        enqueue(terminal->write_q, current_pcb);
+        SwitchToNextProc(BLOCKED);
+    }
+    // let the current process have the write lock
+    terminal->write_pcb = current_pcb;
+
+    // put a copy of the input in region1
+    terminal->write_buf = (char*)malloc(sizeof(char) * len);
+    strcpy(terminal->write_buf, buffer);
+
+    TracePrintf(1, "Writting %s to terminal %x\n", terminal->write_buf, tty_id);
+    TtyTransmit(tty_id, terminal->write_buf, len);
+
+    SwitchToNextProc(BLOCKED);
+
+    return len;
 
 }

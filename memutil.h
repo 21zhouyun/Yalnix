@@ -14,12 +14,14 @@
 
 #define MAX_QUEUE_SIZE 1024
 #define MAX_NUM_CHILDREN 8
+
 // process states
 #define NOT_LOADED -1 //default
 #define RUNNING 0 //take care by ContextSwitch
 #define DELAYED 1 //in delay queue 
-#define TERMINATED 2 //take care by exit handler
-#define READY 3 //take care by ready queue
+#define BLOCKED 2 //blocked
+#define TERMINATED 3 //take care by exit handler
+#define READY 4 //take care by ready queue
 
 struct frame* free_frames;//global array of all free frames
 int num_frames;
@@ -45,6 +47,9 @@ struct pcb* current_pcb; //pcb for current process
 queue* ready_q;
 queue* delay_q;
 
+//terminals
+struct tty* terminals;
+
 struct pcb{
     unsigned int pid;
     int process_state;
@@ -58,12 +63,19 @@ struct pcb{
     void *current_brk;
     struct pte* physical_page_table; // physical address to the page table (never change)
     struct pte* page_table; // virtual address to the page table
-} pcb;
+    char* read_buf;
+};
 
 struct frame{
     bool free;
     bool upper;
     bool lower;
+};
+
+struct tty{
+    struct pcb* write_pcb; //current process writing to terminals
+    queue* write_q;
+    char* write_buf;
 };
 
 // manage page tables
@@ -90,9 +102,12 @@ void* mapToTemp(void* addr, long temp_vpn);
 int initializeQueues();
 int enqueue_ready(struct pcb* process_pcb);
 int enqueue_delay(struct pcb* process_pcb);
-//TODO: free node after dequeue
+
 struct pcb* dequeue_ready();
 struct pcb* dequeue_delay();
+
+// deal with terminals
+void initializeTerminals();
 
 //debug
 void debugPageTable(struct pte *page_table);

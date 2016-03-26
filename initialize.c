@@ -75,6 +75,7 @@ void KernelStart(ExceptionStackFrame *frame,
     // VM enabled
 
     initializeQueues();
+    initializeTerminals();
 
     // initialize pcb
     idle_pcb = makePCB(NULL, idle_page_table);
