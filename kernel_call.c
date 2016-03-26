@@ -124,6 +124,7 @@ int WaitHandler(int *status_ptr) {
             if (child_pcb->process_state == TERMINATED){
                 pop(current_pcb->children, current);
                 *status_ptr = child_pcb->exit_status;
+                free(child_pcb->context);
                 free(child_pcb);
                 return child_pcb->pid;
             }
@@ -135,16 +136,47 @@ int WaitHandler(int *status_ptr) {
 }
 
 int TtyReadHandler(int tty_id, void *buf, int len){
-    current_pcb->read_buf = (char*)malloc(sizeof(char) * len);
+    int retval;
 
+    struct tty* terminal = &terminals[tty_id];
+    if (terminal->read_buf_q->length == 0){
+        //nothing to read yet, block current process
+        TracePrintf(1, "No available input from tty %d\n", tty_id);
+        enqueue(terminal->read_q, (void*)current_pcb);
+        SwitchToNextProc(BLOCKED);
+    }
+
+    node* head = terminal->read_buf_q->head;
+    struct read_buf* input_buffer = (struct read_buf*) head->value;
+
+    if (input_buffer->len <= len){
+        // the requested length is longer than the first line
+        // of the input buffer
+        retval = input_buffer->len;
+        dequeue(terminal->read_buf_q);
+        strncpy((char*)buf, input_buffer->buf, len);
+
+        free(input_buffer);
+        free(head);
+    } else {
+        // the requested length is shorter than the first line
+        // of the input buffer
+        retval = len;
+        strncpy((char*)buf, input_buffer->buf, len);
+
+        // update input buf
+        input_buffer->buf = &(input_buffer->buf[len]);
+        input_buffer->len = input_buffer->len - len;
+    }
+
+    return retval;
 }
 
 int TtyWriteHandler(int tty_id, void *buf, int len){
     struct tty* terminal = &terminals[tty_id];
     char* buffer = (char*)buf;
-    TracePrintf(1, "init variables\n");
     // if there is a process writing to the terminal, block the current process
-    if (terminal->write_pcb != NULL && current_pcb->pid != terminal->write_pcb->pid){
+    if (terminal->write_pcb != NULL){
         enqueue(terminal->write_q, current_pcb);
         SwitchToNextProc(BLOCKED);
     }

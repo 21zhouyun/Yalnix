@@ -72,10 +72,18 @@ struct frame{
     bool lower;
 };
 
+// a structure that holds the user input
+struct read_buf{
+    char* buf;
+    int len;
+};
+
 struct tty{
     struct pcb* write_pcb; //current process writing to terminals
-    queue* write_q;
+    queue* read_q; //blocked process for reading
+    queue* write_q; //blocked process for writing
     char* write_buf;
+    queue* read_buf_q;
 };
 
 // manage page tables

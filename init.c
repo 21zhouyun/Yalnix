@@ -1,72 +1,83 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <comp421/hardware.h>
 #include <comp421/yalnix.h>
-#include <stdlib.h>
+#include <comp421/hardware.h>
+
+#define MAX_ARGC	32
+
+int
+StartTerminal(int i)
+{
+    char *cmd_argv[MAX_ARGC];
+    char numbuf[128];	/* big enough for %d */
+    int pid;
+
+    if (i == TTY_CONSOLE)
+	cmd_argv[0] = "console";
+    else
+	cmd_argv[0] = "shell";
+    sprintf(numbuf, "%d", i);
+    cmd_argv[1] = numbuf;
+    cmd_argv[2] = NULL;
+
+    TracePrintf(0, "Pid %d calling Fork\n", GetPid());
+    pid = Fork();
+    TracePrintf(0, "Pid %d got %d from Fork\n", GetPid(), pid);
+
+    if (pid < 0) {
+	TtyPrintf(TTY_CONSOLE,
+	    "Cannot Fork control program for terminal %d.\n", i);
+	return (ERROR);
+    }
+
+    if (pid == 0) {
+	Exec(cmd_argv[0], cmd_argv);
+	TtyPrintf(TTY_CONSOLE,
+	    "Cannot Exec control program for terminal %d.\n", i);
+	Exit(1);
+    }
+
+    TtyPrintf(TTY_CONSOLE, "Started pid %d on terminal %d\n", pid, i);
+    return (pid);
+}
+
 int
 main(int argc, char **argv)
 {
-    // Exit TEST
-    // int i = 1;
-    // TracePrintf(1, "In init\n");
-    // Delay(1);
-    // Exit(0);
-    
-
-
-    // BRK TEST
-	// void * a = malloc (4096 * 10);
-	// void * b = malloc (4096 * 10);
-	// char * stringA = malloc (sizeof(char) * 10);
-	// char * stringB = "123456789";
-
-	// strncpy(stringA, stringB, 10);
-	// TracePrintf(1, "String written: %s.\n", stringA);
-	// TracePrintf(1, "Address allocated, a: %p, b: %p\n", a, b);
-	// TracePrintf(1, "Writing to a number 5.\n");
-	// *(int *)a = 5;
-	// TracePrintf(1, "Check if content equals: 5 == %d \n", *(int*)a);
-	
-
-	// free(b);
-	// TracePrintf(1, "b freed: %p\n", b);
-	// //Uncomment the following two lines should cause error
-	// //TracePrintf(1, "Now try to write to an invalid page, should see implicit user stack growth, but in redzone:\n");
-	// //*(int *)((int)b+4096) = 5;
-
-	// //TracePrintf(1, "Now try to access an invalid page, should see error: %p\n", *(int *) ((int)b + 4096));
-	// void * c = malloc (4096 * 10);
-	// TracePrintf(1, "Address allocated, c: %p\n", c);
-
-
-    // FORK TEST
-    // TracePrintf(1, "In init main. Do fork.\n");
-    // int pid = Fork();
-    // int status, killed;
-    // if (pid == 0){
-    //     TracePrintf(1, "In child of init\n");
-
-    //     // ./yalnix -lh 5 -lu 5 -lk 5 init exectest exectest
-    //     // load init shows correct args, but when loading exectest, the arglist is wrong.
-    //     // this does not cause the read to change contents.
-    //     Exec(argv[1], argv + 1);
-
-    //     TracePrintf(1, "Child exiting.\n");
-    //     Exit(0);
-    // } else {
-    //     TracePrintf(1, "Spawned child with pid %x\n", pid);
-    //     TracePrintf(1, "in init (%x)\n", GetPid());
-    //     killed = Wait(&status);
-    //     TracePrintf(1, "In init: Killed child %d, status: %d\n", killed, status);
-    //     Exit(0);
-    // }
-    
-    // TTY test
+    int pids[NUM_TERMINALS];
     int i;
-    const char* test_str = "Content";
-    for (i = 0; i < 10; i++){
-        TtyWrite(1, (void*)test_str, strlen(test_str));
+    int status;
+    int pid;
+
+    for (i = 0; i < NUM_TERMINALS; i++) {
+	pids[i] = StartTerminal(i);
+	if ((i == TTY_CONSOLE) && (pids[TTY_CONSOLE] < 0)) {
+	    TtyPrintf(TTY_CONSOLE, "Cannot start Console monitor!\n");
+	    Exit(1);
+	}
     }
 
-    return 0;
+    while (1) {
+	pid = Wait(&status);
+	if (pid == pids[TTY_CONSOLE]) {
+	    TtyPrintf(TTY_CONSOLE, "Halting Yalnix\n");
+	    /*
+	     *  Halt should normally be a privileged instruction (and
+	     *  thus not usable from user mode), but the hardware
+	     *  has been set up to allow it for this project so that
+	     *  we can shut down Yalnix simply here.
+	     */
+	    Halt();
+	}
+	for (i = 1; i < NUM_TERMINALS; i++) {
+	    if (pid == pids[i]) break;
+	}
+	if (i < NUM_TERMINALS) {
+	    TtyPrintf(TTY_CONSOLE, "Pid %d exited on terminal %d.\n", pid, i);
+	    pids[i] = StartTerminal(i);
+	}
+	else {
+	    TtyPrintf(TTY_CONSOLE, "Mystery pid %d returned from Wait!\n", pid);
+	}
+    }
 }

@@ -319,6 +319,8 @@ int setHalfFrame(long addr, bool state){
         // the frame itself must share the same state
         setFrame(pfn, state);
     }
+
+    return 0;
 }
 
 /**
@@ -408,7 +410,9 @@ void initializeTerminals(){
     terminals = (struct tty*)malloc(sizeof(struct tty) * NUM_TERMINALS);
     for (i = 0; i < NUM_TERMINALS; i++){
         terminals[i].write_pcb = NULL;
+        terminals[i].read_q = makeQueue(MAX_QUEUE_SIZE);
         terminals[i].write_q = makeQueue(MAX_QUEUE_SIZE);
+        terminals[i].read_buf_q = makeQueue(MAX_QUEUE_SIZE);
     }
 }
 

@@ -9,7 +9,7 @@
 #include "ctxswitch.h"
 
 
-int round = 0;
+int ticks = 0;
 
 void *trap_vector[TRAP_VECTOR_SIZE];
 
@@ -67,6 +67,9 @@ void KernelCallHandler(ExceptionStackFrame *frame){
             frame->regs[0] = BrkHandler(frame->regs[1]);
             break;
         case YALNIX_TTY_READ:
+            TracePrintf(1, "TTY_READ\n");
+            TracePrintf(1, "id %d, buf %s, len %d\n", frame->regs[1], frame->regs[2], frame->regs[3]);
+            frame->regs[0] = TtyReadHandler(frame->regs[1], frame->regs[2], frame->regs[3]);
             break;
         case YALNIX_TTY_WRITE:
             TracePrintf(1, "TTY_WRITE\n");
@@ -98,7 +101,7 @@ void ClockHandler(ExceptionStackFrame *frame){
 
     // see if we are in idle
     if (current_pcb->pid == 0 && ready_q->length > 0 || 
-        current_pcb->pid > 0 && (++round % 2 == 0)){ // round robin algo
+        current_pcb->pid > 0 && (++ticks % 2 == 0)){ // round robin algo
         struct pcb* next_pcb = dequeue_ready();
         TracePrintf(1, "Found ready pid %d, swith to it.\n", next_pcb->pid);
         ContextSwitch(MySwitchFunc, current_pcb->context, current_pcb, next_pcb);
@@ -170,12 +173,26 @@ void MathHandler(ExceptionStackFrame *frame){
 void TtyReceiveHandler(ExceptionStackFrame *frame){
     TracePrintf(0, "TtyReceiveHandler\n");
     int tty_id = frame->code;
+    struct tty* terminal = &terminals[tty_id];
     int read_len;
 
     char *buf = (char*)malloc(sizeof(char) * TERMINAL_MAX_LINE);
+    //read_len includes '\n'
     read_len = TtyReceive(tty_id, (void*)buf, TERMINAL_MAX_LINE);
 
-    //TODO finish this after implementing the kernel call
+    struct read_buf* input_buf = (struct read_buf*)malloc(sizeof(struct read_buf));
+    input_buf->buf = buf;
+    input_buf->len = read_len;
+
+    enqueue(terminal->read_buf_q, (void*)input_buf);
+
+    // unblock a blocked read process
+    if (terminal->read_q->length > 0){
+        node* n = dequeue(terminal->read_q);
+        struct pcb* process_pcb = (struct pcb*)(n->value);
+        enqueue_ready(process_pcb);
+        free(n);
+    }
 }
 
 void TtyTransmitHandler(ExceptionStackFrame *frame){
@@ -185,11 +202,15 @@ void TtyTransmitHandler(ExceptionStackFrame *frame){
 
     // unblock the writing process
     struct pcb* process_pcb = terminal->write_pcb;
+    free(terminal->write_buf);
     TracePrintf(1, "Finish write request for pid %d\n", process_pcb->pid);
     enqueue_ready(process_pcb);
 
+    // unblock a blocked write process
     if (terminal->write_q->length > 0){
-        enqueue_ready(dequeue(terminal->write_q));
+        node* n = dequeue(terminal->write_q);
+        enqueue_ready((struct pcb*)(n->value));
+        free(n);
     }
 }
 
