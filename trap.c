@@ -200,8 +200,10 @@ void TtyTransmitHandler(ExceptionStackFrame *frame){
     int tty_id = frame->code;
     struct tty* terminal = &terminals[tty_id];
 
-    // unblock the writing process
+    // unblock the current writing process
     struct pcb* process_pcb = terminal->write_pcb;
+    terminal->write_pcb = NULL;
+    
     free(terminal->write_buf);
     TracePrintf(1, "Finish write request for pid %d\n", process_pcb->pid);
     enqueue_ready(process_pcb);
