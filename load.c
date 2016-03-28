@@ -244,7 +244,7 @@ LoadProgram(char *name, char **args, struct pcb* program_pcb, ExceptionStackFram
     // >>>>     pfn   = a new page of physical memory
     k = GET_VPN(USER_STACK_LIMIT) - stack_npg;
     for (i = 0; i < stack_npg; i++){
-
+        program_pcb->user_stack_limit -= PAGESIZE;
         user_table[i + k].valid = 1;
         user_table[i + k].kprot = (PROT_READ | PROT_WRITE);
         user_table[i + k].uprot = (PROT_READ | PROT_WRITE);
