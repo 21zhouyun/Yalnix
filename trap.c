@@ -160,7 +160,7 @@ void MemoryHandler(ExceptionStackFrame *frame){
 
     if (!stackGrew) {
         // Terminate the current running process.
-        TracePrintf(2, "TRAP_MEMORY: MemoryHandler terminating process pid %d,"
+        fprintf(stderr, "TRAP_MEMORY: MemoryHandler terminating process pid %d,"
             "type of disallowed memory access: %d\n", current_pcb->pid,
             frame->code);
         current_pcb -> process_state = TERMINATED;
