@@ -59,6 +59,7 @@ int pop(queue* q, node* n){
         //n is the only node in q
         q->head = NULL;
         q->tail = NULL;
+        q->length --;
     } else if (n->previous == NULL){
         //n is the head
         dequeue(q);
@@ -68,6 +69,7 @@ int pop(queue* q, node* n){
         q->tail = n->previous;
 
         n->previous = NULL;
+        q->length --;
     } else{
         // a node in between
         n->previous->next = n->next;
@@ -75,8 +77,7 @@ int pop(queue* q, node* n){
 
         n->previous = NULL;
         n->next = NULL;
+        q->length --;
     }
-
-    q->length --;
     return 0;
 }

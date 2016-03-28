@@ -89,11 +89,12 @@ void ClockHandler(ExceptionStackFrame *frame){
     struct pcb* cpcb;
     while (current != NULL){
         cpcb = (struct pcb*)current->value;
-        TracePrintf(1, "Checking delayed pid %d (%d)\n", cpcb->pid, cpcb->delay_remain);
+        TracePrintf(0, "Checking delayed pid %d (%d)\n", cpcb->pid, cpcb->delay_remain);
         cpcb->delay_remain--;
         if (cpcb->delay_remain <= 0){
             // move this to ready queue
             pop(delay_q, current);
+            TracePrintf(0, "Move pid %d to ready queue. deplay queue length: %d\n", cpcb->pid, delay_q->length);
             enqueue_ready(cpcb);
         }
 
@@ -103,9 +104,7 @@ void ClockHandler(ExceptionStackFrame *frame){
     // see if we are in idle
     if ((current_pcb->pid == 0 && ready_q->length > 0) || 
         (current_pcb->pid > 0 && (++ticks % 2 == 0))){ // round robin algo
-        struct pcb* next_pcb = dequeue_ready();
-        TracePrintf(1, "Found ready pid %d, swith to it.\n", next_pcb->pid);
-        ContextSwitch(MySwitchFunc, current_pcb->context, current_pcb, next_pcb);
+        SwitchToNextProc(RUNNING);
     }
 }
 

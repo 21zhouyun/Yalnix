@@ -374,13 +374,13 @@ int initializeQueues(){
 int enqueue_ready(struct pcb* process_pcb){
     process_pcb->process_state = READY;
     enqueue(ready_q, process_pcb);
-    TracePrintf(1, "Enqueued pid %d into ready queue (%d)\n", process_pcb->pid, ready_q->length);
+    TracePrintf(0, "Enqueued pid %d into ready queue (%d)\n", process_pcb->pid, ready_q->length);
     return 0;
 }
 int enqueue_delay(struct pcb* process_pcb){
     process_pcb->process_state = DELAYED;
     enqueue(delay_q, process_pcb);
-    TracePrintf(1, "Enqueued pid %d into delay queue (%d)\n", process_pcb->pid, ready_q->length);
+    TracePrintf(0, "Enqueued pid %d into delay queue (%d)\n", process_pcb->pid, delay_q->length);
     return 0;
 }
 struct pcb* dequeue_ready(){
