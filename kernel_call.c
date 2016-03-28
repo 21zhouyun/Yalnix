@@ -50,6 +50,7 @@ int BrkHandler(void *addr){
                 TracePrintf(1, "Not enough physical memory to grow user heap for pid %d.\n", current_pcb->pid);
                 return ERROR;
             }
+            TracePrintf(1, "map pfn %x to vpn %x\n", pfn, vpn);
             current_pcb->page_table[vpn].pfn = pfn;
             //TODO: Check if these prot bits are right
             current_pcb->page_table[vpn].uprot = PROT_ALL;

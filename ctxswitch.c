@@ -48,6 +48,10 @@ SavedContext *ForkSwitchFunc(SavedContext *ctxp, void *p1, void *p2){
     //since both contexts are allocated in region1, we can directly
     //copy it over using its virtual address.
     memcpy(child_pcb->context, ctxp, sizeof(SavedContext));
+    child_pcb->process_state = parent_pcb->process_state;
+    child_pcb->psr = parent_pcb->psr;
+    child_pcb->user_stack_limit = parent_pcb->user_stack_limit;
+    child_pcb->current_brk = parent_pcb->current_brk;
 
 	TracePrintf(1, "Copy reigon0 from parent proces to child process.\n");
     //copy parent region0 to child, including kernel stack
@@ -64,6 +68,7 @@ SavedContext *ForkSwitchFunc(SavedContext *ctxp, void *p1, void *p2){
 	if (current_pcb->pid != 0 && current_pcb->process_state != TERMINATED){
 		enqueue_ready(current_pcb);
 	}
+
     current_pcb = child_pcb;
     current_pcb->process_state = RUNNING;
 
