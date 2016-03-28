@@ -13,10 +13,10 @@
 int PID = 0;
 
 // this maps the current process' page table to its physical location
-extern const long kernel_temp_vpn = GET_VPN(VMEM_1_LIMIT) - GET_VPN(VMEM_1_BASE) - 1;
+const long kernel_temp_vpn = GET_VPN(VMEM_1_LIMIT) - GET_VPN(VMEM_1_BASE) - 1;
 // use this for any temporary change, no need to change it back
-extern const long kernel_temp_vpn2 = GET_VPN(VMEM_1_LIMIT) - GET_VPN(VMEM_1_BASE) - 2;
-extern const long copier = GET_VPN(VMEM_1_LIMIT) - GET_VPN(VMEM_1_BASE) - 3;
+const long kernel_temp_vpn2 = GET_VPN(VMEM_1_LIMIT) - GET_VPN(VMEM_1_BASE) - 2;
+const long copier = GET_VPN(VMEM_1_LIMIT) - GET_VPN(VMEM_1_BASE) - 3;
 
 struct pte* free_to_take_page_table = NULL;
 

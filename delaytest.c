@@ -6,8 +6,9 @@
 int
 main(int argc, char **argv)
 {
-    TracePrintf(1, "In Delay test\n");
+    fprintf(stderr, "Starting delay...\n");
     Delay(atoi(argv[1]));
+    fprintf(stderr, "Delay finished!\n");
 
     Exit(0);
 }

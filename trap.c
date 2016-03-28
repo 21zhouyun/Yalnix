@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <comp421/hardware.h>
 #include <comp421/yalnix.h>
 #include "trap.h"
@@ -44,7 +45,7 @@ void KernelCallHandler(ExceptionStackFrame *frame){
             break;
         case YALNIX_EXEC:
             TracePrintf(1, "EXEC\n");
-            frame->regs[0] = ExecHandler(frame, frame->regs[1], frame->regs[2]);
+            frame->regs[0] = ExecHandler(frame, (char *) frame->regs[1], (char **) frame->regs[2]);
             break;
         case YALNIX_EXIT:
             TracePrintf(1, "EXIT\n");
@@ -52,7 +53,7 @@ void KernelCallHandler(ExceptionStackFrame *frame){
             break;
         case YALNIX_WAIT:
             TracePrintf(1, "WAIT\n");
-            frame->regs[0] = WaitHandler(frame->regs[1]);
+            frame->regs[0] = WaitHandler((int *) frame->regs[1]);
             break;
         case YALNIX_GETPID:
             TracePrintf(1, "GET PID\n");
@@ -64,17 +65,17 @@ void KernelCallHandler(ExceptionStackFrame *frame){
             break;
         case YALNIX_BRK:
             TracePrintf(1, "BRK PID 0x%x.\n", current_pcb->pid);
-            frame->regs[0] = BrkHandler(frame->regs[1]);
+            frame->regs[0] = BrkHandler((void *) frame->regs[1]);
             break;
         case YALNIX_TTY_READ:
             TracePrintf(1, "TTY_READ\n");
             TracePrintf(1, "id %d, buf %s, len %d\n", frame->regs[1], frame->regs[2], frame->regs[3]);
-            frame->regs[0] = TtyReadHandler(frame->regs[1], frame->regs[2], frame->regs[3]);
+            frame->regs[0] = TtyReadHandler(frame->regs[1], (void *) frame->regs[2], frame->regs[3]);
             break;
         case YALNIX_TTY_WRITE:
             TracePrintf(1, "TTY_WRITE\n");
             TracePrintf(1, "id %d, buf %s, len %d\n", frame->regs[1], frame->regs[2], frame->regs[3]);
-            frame->regs[0] = TtyWriteHandler(frame->regs[1], frame->regs[2], frame->regs[3]);
+            frame->regs[0] = TtyWriteHandler(frame->regs[1], (void *) frame->regs[2], frame->regs[3]);
             break;
         default:
             TracePrintf(1, "Unknow kernel call!");
@@ -100,8 +101,8 @@ void ClockHandler(ExceptionStackFrame *frame){
     }
 
     // see if we are in idle
-    if (current_pcb->pid == 0 && ready_q->length > 0 || 
-        current_pcb->pid > 0 && (++ticks % 2 == 0)){ // round robin algo
+    if ((current_pcb->pid == 0 && ready_q->length > 0) || 
+        (current_pcb->pid > 0 && (++ticks % 2 == 0))){ // round robin algo
         struct pcb* next_pcb = dequeue_ready();
         TracePrintf(1, "Found ready pid %d, swith to it.\n", next_pcb->pid);
         ContextSwitch(MySwitchFunc, current_pcb->context, current_pcb, next_pcb);
@@ -110,7 +111,10 @@ void ClockHandler(ExceptionStackFrame *frame){
 
 void IllegalHandler(ExceptionStackFrame *frame){
     TracePrintf(0, "IllegalHandler\n");
-    Halt();
+    fprintf(stderr, "TRAP_ILLEGAL for pid: %d, error code: %d\n", current_pcb->pid, frame->code);
+    current_pcb->process_state = TERMINATED;
+    current_pcb->exit_status = ERROR;
+    freeProcess(current_pcb);
 }
 
 void MemoryHandler(ExceptionStackFrame *frame){
@@ -157,16 +161,20 @@ void MemoryHandler(ExceptionStackFrame *frame){
 
     if (!stackGrew) {
         // Terminate the current running process.
-        TracePrintf(2, "TRAP_MEMORY: MemoryHandler terminating process pid %d\n", current_pcb->pid);
+        TracePrintf(2, "TRAP_MEMORY: MemoryHandler terminating process pid %d,"
+            "type of disallowed memory access: %d\n", current_pcb->pid,
+            frame->code);
         current_pcb -> process_state = TERMINATED;
-
+        current_pcb->exit_status = ERROR;
         freeProcess(current_pcb);
     }
 }
 
 void MathHandler(ExceptionStackFrame *frame){
     TracePrintf(0, "MathHandler\n");
+    fprintf(stderr, "TRAP_MATH for pid: %d, error code: %d\n", current_pcb->pid, frame->code);
     current_pcb->process_state = TERMINATED;
+    current_pcb->exit_status = ERROR;
     freeProcess(current_pcb);
 }
 
