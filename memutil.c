@@ -131,9 +131,17 @@ struct pte* initializeUserPageTable(struct pte* page_table) {
  * @return
  */
 int freeProcess(struct pcb *process_pcb){
-    struct pcb* next_pcb = dequeue_ready();
-    TracePrintf(1, "Context Switch to pid %d\n", next_pcb->pid);
-    ContextSwitch(MySwitchFunc, current_pcb->context, current_pcb, next_pcb);
+    int i;
+    //free page table pfn
+    for (i = 0; i < PAGE_TABLE_LEN; i++){
+        if (process_pcb->page_table[i].valid == 1){
+            setFrame(process_pcb->page_table[i].pfn, true);
+        }
+    }
+    //free page table
+    setHalfFrame(process_pcb->physical_page_table, true);
+
+    SwitchToNextProc(TERMINATED);
     return 0;
 }
 
@@ -311,15 +319,19 @@ int setHalfFrame(long addr, bool state){
         // the frame itself must share the same state
         setFrame(pfn, state);
     }
+
+    return 0;
 }
 
 /**
  * Greedily get the first free frame
- * TODO: add back invalid pages after VM is enabled
  */
 long getFreeFrame(){
-    long i;
-    for (i = MEM_INVALID_PAGES; i < num_frames; i++){
+    long i = MEM_INVALID_PAGES;
+    if (vm_enable == true){
+        i = 0;
+    }
+    for (; i < num_frames; i++){
         if (free_frames[i].free == true){
             setFrame(i, false);
             return i;
@@ -390,6 +402,18 @@ struct pcb* dequeue_delay(){
     result = (struct pcb*)n->value;
     free(n);
     return result;
+}
+
+
+void initializeTerminals(){
+    int i;
+    terminals = (struct tty*)malloc(sizeof(struct tty) * NUM_TERMINALS);
+    for (i = 0; i < NUM_TERMINALS; i++){
+        terminals[i].write_pcb = NULL;
+        terminals[i].read_q = makeQueue(MAX_QUEUE_SIZE);
+        terminals[i].write_q = makeQueue(MAX_QUEUE_SIZE);
+        terminals[i].read_buf_q = makeQueue(MAX_QUEUE_SIZE);
+    }
 }
 
 

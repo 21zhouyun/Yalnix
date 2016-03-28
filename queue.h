@@ -16,8 +16,8 @@ typedef struct Node{
 typedef struct Queue{
     node* head;
     node* tail;
-    unsigned int length;
-    unsigned int size;
+    unsigned int length; // the current length of the queue
+    unsigned int size; // the fixed size of the queue
 } queue;
 
 queue* makeQueue(int size);

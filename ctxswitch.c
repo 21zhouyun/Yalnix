@@ -18,11 +18,6 @@ SavedContext *MySwitchFunc(SavedContext *ctxp, void *p1, void *p2)
 		return ctxp;
 	} else {
 		// Doing context switch
-		struct pcb *pcb1 = (struct pcb *) p1;
-        if (pcb1->process_state == TERMINATED){
-            setHalfFrame(pcb1->physical_page_table, true);
-        }
-
 		struct pcb *pcb2 = (struct pcb *) p2;
 
         pcb2->page_table = mapToTemp((void*)pcb2->physical_page_table, kernel_temp_vpn);
@@ -73,4 +68,16 @@ SavedContext *ForkSwitchFunc(SavedContext *ctxp, void *p1, void *p2){
     current_pcb->process_state = RUNNING;
 
     return child_pcb->context;
+}
+
+/**
+ * Modify the current process' state and switch to the next available process.
+ * @param state [description]
+ */
+void SwitchToNextProc(int state){
+    current_pcb->process_state = state;
+
+    struct pcb* next_pcb = dequeue_ready();
+    TracePrintf(1, "Context Switch to pid %d\n", next_pcb->pid);
+    ContextSwitch(MySwitchFunc, current_pcb->context, current_pcb, next_pcb);
 }
