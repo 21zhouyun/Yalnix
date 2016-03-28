@@ -120,7 +120,7 @@ void MemoryHandler(ExceptionStackFrame *frame){
     TracePrintf(0, "MemoryHandler\n");
 
     int numPagesToGrow, i, pfn, vpn;
-    void *addr = frame->addr;
+    void *addr = DOWN_TO_PAGE(frame->addr);
     bool stackGrew = false;
     TracePrintf(2, "Memory address that caused the TRAP_MEMORY: %p\n", addr);
     if (addr < current_pcb->user_stack_limit && addr > current_pcb->current_brk) {
