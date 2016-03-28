@@ -144,7 +144,7 @@ void MemoryHandler(ExceptionStackFrame *frame){
                     stackGrew = false;
                     break;
                 }
-                
+                current_pcb->user_stack_limit -= PAGESIZE;
                 current_pcb->page_table[vpn].pfn = pfn;
                 current_pcb->page_table[vpn].uprot = PROT_ALL;
                 current_pcb->page_table[vpn].kprot = PROT_ALL;
