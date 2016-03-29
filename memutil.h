@@ -13,7 +13,7 @@
 #define KERNEL_TABLE_OFFSET 512
 
 #define MAX_QUEUE_SIZE 1024
-#define MAX_NUM_CHILDREN 8
+#define MAX_NUM_CHILDREN 1024
 
 // process states
 #define NOT_LOADED -1 //default

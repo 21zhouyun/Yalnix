@@ -388,9 +388,8 @@ struct pcb* dequeue_ready(){
     if (ready_q->length == 0){
         return idle_pcb;
     }
-    node* n =dequeue(ready_q);
-    result = (struct pcb*)n->value;
-    free(n);
+    result = (struct pc*)dequeue(ready_q);
+
     return result;
 }
 struct pcb* dequeue_delay(){
@@ -398,9 +397,7 @@ struct pcb* dequeue_delay(){
     if (delay_q->length == 0){
         return idle_pcb;
     }
-    node* n =dequeue(delay_q);
-    result = (struct pcb*)n->value;
-    free(n);
+    result = (struct pcb*)dequeue(delay_q);
     return result;
 }
 

@@ -89,7 +89,17 @@ int ForkHandler(void){
 
 int ExecHandler(ExceptionStackFrame *frame, char *filename, char **argvec) {
     TracePrintf(1, "508 is: %d\n", current_pcb->page_table[508].pfn);
-    return MakeProcess(filename, frame, argvec, current_pcb);
+    int return_val = LoadProgram(filename, argvec, current_pcb, frame);
+    if (return_val == -1){
+        return -1;
+    } else if (return_val == -2){
+        current_pcb->process_state = TERMINATED;
+        current_pcb->exit_status = ERROR;
+        TracePrintf(1, "ERROR cannot exec. Terminated current process!\n");
+        freeProcess(current_pcb);
+    }
+
+    return 0;
 }
 
 
@@ -99,7 +109,7 @@ void ExitHandler(int status) {
     current_pcb->exit_status = status;
 
     while (children->length > 0) {
-        child = dequeue(children)->value;
+        child = (struct pcb*)dequeue(children);
         child->parent = NULL;
     }
 
@@ -123,7 +133,9 @@ int WaitHandler(int *status_ptr) {
         while (current != NULL){
             child_pcb = (struct pcb*)current->value;
             if (child_pcb->process_state == TERMINATED){
+                TracePrintf(1, "Pop child %x from children (%d)\n", child_pcb->pid, current_pcb->children->length);
                 pop(current_pcb->children, current);
+                TracePrintf(1, "Done pop from children (%d)\n", current_pcb->children->length);
                 *status_ptr = child_pcb->exit_status;
                 free(child_pcb->context);
                 free(child_pcb);
@@ -133,7 +145,7 @@ int WaitHandler(int *status_ptr) {
         }
         SwitchToNextProc(RUNNING);
     }
-
+    return ERROR;
 }
 
 int TtyReadHandler(int tty_id, void *buf, int len){

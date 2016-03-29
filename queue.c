@@ -37,17 +37,20 @@ int enqueue(queue* q, void* value){
     return 0;
 }
 
-node* dequeue(queue* q){
+void* dequeue(queue* q){
     if (q == NULL || q->length == 0){
         return NULL;
     }
 
     node* n = q->head;
-    TracePrintf(1, "dequeue node with previous %d, next %d\n", n->previous, n->next);
     q->head->previous = NULL;
     q->head = q->head->next;
     q->length--;
-    return n;
+
+    void* value = n->value;
+    free(n);
+
+    return value;
 }
 
 /**
@@ -55,16 +58,19 @@ node* dequeue(queue* q){
  * n must be in q. Otherwise this function messed up!!
  */
 int pop(queue* q, node* n){
-    if (n->previous == NULL && n->next == NULL){
+    if (q->head == n && q->tail == n){
         //n is the only node in q
+        TracePrintf(1, "ONLY NODE\n");
         q->head = NULL;
         q->tail = NULL;
         q->length --;
-    } else if (n->previous == NULL){
+    } else if (q->head == n){
         //n is the head
+        TracePrintf(1, "DEQUEUE\n");
         dequeue(q);
-    } else if (n->next == NULL){
+    } else if (q->tail == n){
         //n is the tail
+        TracePrintf(1, "TAIL\n");
         n->previous->next = NULL;
         q->tail = n->previous;
 
@@ -72,6 +78,7 @@ int pop(queue* q, node* n){
         q->length --;
     } else{
         // a node in between
+        TracePrintf(1, "IN BETWEEN\n");
         n->previous->next = n->next;
         n->next->previous = n->previous;
 
