@@ -151,6 +151,10 @@ int WaitHandler(int *status_ptr) {
 int TtyReadHandler(int tty_id, void *buf, int len){
     int retval;
 
+    if (tty_id >= NUM_TERMINALS || tty_id < 0) {
+        return ERROR;
+    } 
+
     struct tty* terminal = &terminals[tty_id];
     if (terminal->read_buf_q->length == 0){
         //nothing to read yet, block current process
@@ -166,9 +170,7 @@ int TtyReadHandler(int tty_id, void *buf, int len){
         // the requested length is longer than the first line
         // of the input buffer
         retval = input_buffer->len;
-        if (dequeue(terminal->read_buf_q) == NULL){
-            return ERROR;
-        }
+        dequeue(terminal->read_buf_q);
         strncpy((char*)buf, input_buffer->buf, len);
 
         free(input_buffer);
@@ -187,6 +189,10 @@ int TtyReadHandler(int tty_id, void *buf, int len){
 }
 
 int TtyWriteHandler(int tty_id, void *buf, int len){
+    if (tty_id >= NUM_TERMINALS || tty_id < 0) {
+        return ERROR;
+    } 
+
     struct tty* terminal = &terminals[tty_id];
     char* buffer = (char*)buf;
     // if there is a process writing to the terminal, block the current process
