@@ -197,7 +197,6 @@ void TtyReceiveHandler(ExceptionStackFrame *frame){
     if (terminal->read_q->length > 0){
         struct pcb* process_pcb = (struct pcb*)dequeue(terminal->read_q);
         enqueue_ready(process_pcb);
-        free(n);
     }
 }
 
@@ -218,7 +217,6 @@ void TtyTransmitHandler(ExceptionStackFrame *frame){
     if (terminal->write_q->length > 0){
         struct pcb* next_pcb = (struct pcb*)dequeue(terminal->write_q);
         enqueue_ready(next_pcb);
-        free(n);
     }
 }
 

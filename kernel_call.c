@@ -172,7 +172,6 @@ int TtyReadHandler(int tty_id, void *buf, int len){
         strncpy((char*)buf, input_buffer->buf, len);
 
         free(input_buffer);
-        free(head);
     } else {
         // the requested length is shorter than the first line
         // of the input buffer
