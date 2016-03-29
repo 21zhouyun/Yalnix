@@ -166,7 +166,9 @@ int TtyReadHandler(int tty_id, void *buf, int len){
         // the requested length is longer than the first line
         // of the input buffer
         retval = input_buffer->len;
-        dequeue(terminal->read_buf_q);
+        if (dequeue(terminal->read_buf_q) == NULL){
+            return ERROR;
+        }
         strncpy((char*)buf, input_buffer->buf, len);
 
         free(input_buffer);

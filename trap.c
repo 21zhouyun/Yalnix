@@ -195,8 +195,7 @@ void TtyReceiveHandler(ExceptionStackFrame *frame){
 
     // unblock a blocked read process
     if (terminal->read_q->length > 0){
-        node* n = dequeue(terminal->read_q);
-        struct pcb* process_pcb = (struct pcb*)(n->value);
+        struct pcb* process_pcb = (struct pcb*)dequeue(terminal->read_q);
         enqueue_ready(process_pcb);
         free(n);
     }
@@ -217,8 +216,8 @@ void TtyTransmitHandler(ExceptionStackFrame *frame){
 
     // unblock a blocked write process
     if (terminal->write_q->length > 0){
-        node* n = dequeue(terminal->write_q);
-        enqueue_ready((struct pcb*)(n->value));
+        struct pcb* next_pcb = (struct pcb*)dequeue(terminal->write_q);
+        enqueue_ready(next_pcb);
         free(n);
     }
 }
